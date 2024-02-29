@@ -26,7 +26,7 @@ os.environ["SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS"] = "1"
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 
-from classes.tracker_class import VideoThread
+from classes.tracker_class_new import VideoThread
 from classes.gui_widgets import Ui_MainWindow
 from classes.robot_class import Robot
 from classes.arduino_class import ArduinoHandler

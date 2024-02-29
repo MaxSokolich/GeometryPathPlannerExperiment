@@ -7,7 +7,6 @@ from datetime import datetime
 from scipy import ndimage 
 import time
 
-from classes.algorithm_class import algorithm
     
 #add unique crop length 
 class RecordThread(QThread):

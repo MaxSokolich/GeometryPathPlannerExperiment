@@ -30,15 +30,8 @@ except Exception:
 
 from classes.tracker_class import VideoThread
 from classes.gui_widgets import Ui_MainWindow
-
-from classes.robot_class import Robot
-from classes.cell_class import Cell
 from classes.arduino_class import ArduinoHandler
-from classes.joystick_class import Mac_Controller,Linux_Controller,Windows_Controller
-from classes.simulation_class import HelmholtzSimulator
-from classes.projection_class import AxisProjection
-from classes.acoustic_class import AcousticClass
-from classes.halleffect_class import HallEffect
+from classes.robot_class import Robot
 from classes.record_class import RecordThread
 
 
@@ -90,6 +83,25 @@ class MainWindow(QtWidgets.QMainWindow):
             if not os.path.exists(self.new_dir_path):
                 os.makedirs(self.new_dir_path)
 
+        #connect to arduino
+        if "mac" in platform.platform():
+            self.tbprint("Detected OS: macos")
+            PORT = "/dev/cu.usbmodem11301"
+           
+        elif "Linux" in platform.platform():
+            self.tbprint("Detected OS: Linux")
+            PORT = "/dev/ttyACM0"
+
+        elif "Windows" in platform.platform():
+            self.tbprint("Detected OS:  Windows")
+            PORT = "COM3"
+        else:
+            self.tbprint("undetected operating system")
+            PORT = None
+        
+        self.arduino = ArduinoHandler(self.tbprint)
+        self.arduino.connect(PORT)
+
 
 
         self.zoom_x, self.zoom_y, self.zoomscale, self.scrollamount = 1,0,0,0
@@ -97,7 +109,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentframe = None
         self.frame_number = 0
         self.robots = []
-        self.cells = []
         self.videopath = 0
         self.cap = None
         self.tracker = None
@@ -106,68 +117,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save_status = False
         self.output_workbook = None
         
-        
-        
-        self.drawing = False
-        self.acoustic_frequency = 0
-        self.gradient_status = 0
-        self.magnetic_field_list = []
-        
-        self.actions = [0,0,0,0,0,0,0,0,0,0,0,0,0]
-        self.Bx, self.By, self.Bz = 0,0,0
-        self.Mx, self.My, self.Mz = 0,0,0
-        self.alpha, self.gamma, self.psi, self.freq = 0,0,0,0
-        self.sensorBx, self.sensorBy, self.sensorBz = 0,0,0
-        self.field_magnitude = 100
 
-        #control tab functions
-        self.control_status = False
-        self.joystick_status = False
-        self.manual_status = False
-
-
-        #connect to arduino
-        if "mac" in platform.platform():
-            self.tbprint("Detected OS: macos")
-            PORT = "/dev/cu.usbmodem11301"
-            self.controller_actions = Mac_Controller()
-        elif "Linux" in platform.platform():
-            self.tbprint("Detected OS: Linux")
-            PORT = "/dev/ttyACM0"
-            self.controller_actions = Linux_Controller()
-        elif "Windows" in platform.platform():
-            self.tbprint("Detected OS:  Windows")
-            PORT = "COM3"
-            self.controller_actions = Windows_Controller()
-        else:
-            self.tbprint("undetected operating system")
-            PORT = None
-        
-        self.arduino = ArduinoHandler(self.tbprint)
-        self.arduino.connect(PORT)
-        
-        
-        #define, simulator class, pojection class, and acoustic class
-        self.simulator = HelmholtzSimulator(self.ui.magneticfieldsimlabel, width=310, height=310, dpi=200)
-        self.projection = AxisProjection()
-        self.acoustic_module = AcousticClass()
-        self.halleffect = HallEffect(self)
-        self.halleffect.sensor_signal.connect(self.update_halleffect_sensor)
-        self.halleffect.start()
-        
-        
-        
-        pygame.init()
-        if pygame.joystick.get_count() == 0:
-            self.tbprint("No Joystick Connected...")
-            
-        else:
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
-            self.tbprint("Connected to: "+str(self.joystick.get_name()))
-        
-        
-        self.setFile()
         self.setFile()
      
 
@@ -191,114 +141,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.robotcroplengthbox.valueChanged.connect(self.get_slider_vals)
       
 
-        self.ui.cellmasklowerbox.valueChanged.connect(self.get_slider_vals)
-        self.ui.cellmaskupperbox.valueChanged.connect(self.get_slider_vals)
-        self.ui.cellmaskdilationbox.valueChanged.connect(self.get_slider_vals)
-        self.ui.cellmaskblurbox.valueChanged.connect(self.get_slider_vals)
-        self.ui.cellcroplengthbox.valueChanged.connect(self.get_slider_vals)
-        
 
-        self.ui.gradient_status_checkbox.toggled.connect(self.gradientcommand)
         self.ui.savedatabutton.clicked.connect(self.savedata)
         self.ui.VideoFeedLabel.installEventFilter(self)
         self.ui.recordbutton.clicked.connect(self.recordfunction_class)
-        self.ui.controlbutton.clicked.connect(self.toggle_control_status)
-        self.ui.memorybox.valueChanged.connect(self.get_slider_vals)
-        self.ui.RRTtreesizebox.valueChanged.connect(self.get_slider_vals)
-        self.ui.arrivalthreshbox.valueChanged.connect(self.get_slider_vals)
-        self.ui.magneticfrequencydial.valueChanged.connect(self.get_slider_vals)
-        self.ui.gammadial.valueChanged.connect(self.get_slider_vals)
-        self.ui.psidial.valueChanged.connect(self.get_slider_vals)
-        self.ui.applyacousticbutton.clicked.connect(self.apply_acoustic)
-        self.ui.acousticfreq_spinBox.valueChanged.connect(self.get_acoustic_frequency)
-
-        self.ui.alphaspinBox.valueChanged.connect(self.spinbox_alphachanged)
-        self.ui.alphadial.valueChanged.connect(self.dial_alphachanged)
-        
         self.ui.resetdefaultbutton.clicked.connect(self.resetparams)
-        self.ui.simulationbutton.clicked.connect(self.toggle_simulation)
-        self.ui.orientradio.toggled.connect(self.checkorient)
         self.ui.objectivebox.valueChanged.connect(self.get_objective)
         self.ui.exposurebox.valueChanged.connect(self.get_exposure)
-        self.ui.joystickbutton.clicked.connect(self.toggle_joystick_status)
-        self.ui.autoacousticbutton.clicked.connect(self.toggle_autoacoustic)
-        self.ui.manualapplybutton.clicked.connect(self.get_manual_bfieldbuttons)
-        self.ui.manualfieldBx.valueChanged.connect(self.get_slider_vals)
-        self.ui.manualfieldBy.valueChanged.connect(self.get_slider_vals)
-        self.ui.manualfieldBz.valueChanged.connect(self.get_slider_vals)
         self.ui.croppedmasktoggle.clicked.connect(self.showcroppedoriginal)
         self.ui.croppedrecordbutton.clicked.connect(self.croppedrecordfunction)
-        #self.ui.robotmask_radio.
-        #self.showFullScreen()
-
-    def spinbox_alphachanged(self):
-        self.ui.alphadial.setValue(self.ui.alphaspinBox.value())
-    
-    def dial_alphachanged(self):
-        self.ui.alphaspinBox.setValue(self.ui.alphadial.value())
-
-    def gradientcommand(self):
-        self.gradient_status = int(self.ui.gradient_status_checkbox.isChecked())
-
-    def update_actions(self, actions, stopped, robot_list, cell_list):
-        self.frame_number+=1
-        
-        #output actions if control status is on
-        if self.ui.autoacousticbutton.isChecked():
-            self.acoustic_frequency  = actions[-1]   
-        
-        if self.control_status == True:
-            self.Bx, self.By, self.Bz, self.alpha, self.gamma, self.freq, self.psi, _  = actions    
-           
-             
-            self.gamma = np.radians(self.ui.gammadial.value())
-            self.psi = np.radians(self.ui.psidial.value())
-            if self.ui.orientradio.isChecked():
-                self.freq = 0
-            else:
-                self.freq = self.ui.magneticfrequencydial.value()
-
-            if stopped == True:
-                self.apply_actions(False)
-
-            
-        #if joystick is on use the joystick though
-        elif self.joystick_status == True:
-            type, self.Bx, self.By, self.Bz, self.alpha, self.gamma, self.freq, self.psi, _ = self.controller_actions.run(self.joystick)
-            
-            
-            if type == 1:
-                self.gamma = np.radians(180)
-                self.freq = self.ui.magneticfrequencydial.value()
-            
-            elif type == 2:
-                self.gamma = np.radians(0)
-                self.freq = self.ui.magneticfrequencydial.value()
-            
-            else:
-                self.gamma = np.radians(self.ui.gammadial.value())
-                self.psi = np.radians(self.ui.psidial.value())
-            
-                if self.freq != 0:
-                    self.freq = self.ui.magneticfrequencydial.value()
-            
   
 
 
-        elif self.manual_status == True:
-            self.Bx = self.ui.manualfieldBx.value()/100
-            self.By = self.ui.manualfieldBy.value()/100
-            self.Bz = self.ui.manualfieldBz.value()/100
-            
-            self.freq = self.ui.magneticfrequencydial.value()
-            self.gamma = np.radians(self.ui.gammadial.value())
-            self.psi = np.radians(self.ui.psidial.value())
 
-            self.alpha = np.radians(self.ui.alphadial.value())
-            
-        
 
-    
+    def update_actions(self, robot_list):
+       
+
+
+        #insert algorithm below
+
+        self.arduino.send(0,0,0,0,0,0,0,0,0)
+
+
         #DEFINE CURRENT ROBOT PARAMS TO A LIST
         if len(robot_list) > 0:
             self.robots = []
@@ -317,47 +182,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 
                 self.robots.append(currentbot_params)
         
-        #DEFINE CURRENT CELL PARAMS TO A LIST
-        if len(cell_list) > 0:
-            self.cells = []
-            for cell in cell_list:
-                currentcell_params = [cell.frame_list[-1],
-                                     cell.times[-1],
-                                     cell.position_list[-1][0],cell.position_list[-1][1], 
-                                     cell.velocity_list[-1][0], cell.velocity_list[-1][1],cell.velocity_list[-1][2],
-                                     cell.blur_list[-1],
-                                     cell.area_list[-1],
-                                     cell.avg_area,
-                                     cell.cropped_frame[-1][0],cell.cropped_frame[-1][1], cell.cropped_frame[-1][2],cell.cropped_frame[-1][3],
-                                    ]
-                
-                self.cells.append(currentcell_params)
-        
-        #DEFINE CURRENT MAGNETIC FIELD OUTPUT TO A LIST 
-        self.actions = [self.frame_number, self.Bx, self.By, self.Bz, self.alpha, self.gamma, self.freq, self.psi, self.gradient_status,
-                        self.acoustic_frequency, self.sensorBx, self.sensorBy, self.sensorBz] 
-        
-        self.magnetic_field_list.append(self.actions)
-        self.apply_actions(True)
-        
-
-
         #IF SAVE STATUS THEN CONTINOUSLY SAVE THE CURRENT ROBOT PARAMS AND MAGNETIC FIELD PARAMS TO AN EXCEL ROWS
         if self.save_status == True:
-            self.magnetic_field_sheet.append(self.actions)
             for (sheet, bot) in zip(self.robot_params_sheets,self.robots):
                 sheet.append(bot[:-1])
-            for (sheet, cell) in zip(self.cell_params_sheets,self.cells):
-                sheet.append(cell[:-1])
+      
 
 
 
     def start_data_record(self):
         self.output_workbook = openpyxl.Workbook()
             
-        #create sheet for magneti field actions
-        self.magnetic_field_sheet = self.output_workbook.create_sheet(title="Magnetic Field Actions")#self.output_workbook.active
-        self.magnetic_field_sheet.append(["Frame","Bx", "By", "Bz", "Alpha", "Gamma", "Rolling Frequency", "Psi", "Gradient?", "Acoustic Frequency","Sensor Bx", "Sensor By", "Sensor Bz"])
 
         #create sheet for robot data
         self.robot_params_sheets = []
@@ -366,12 +201,6 @@ class MainWindow(QtWidgets.QMainWindow):
             robot_sheet.append(["Frame","Times","Pos X", "Pos Y", "Vel X", "Vel Y", "Vel Mag", "Blur", "Area", "Avg Area", "Cropped X","Cropped Y","Cropped W","Cropped H","Stuck?","Path X", "Path Y"])
             self.robot_params_sheets.append(robot_sheet)
         
-        #create sheet for robot data
-        self.cell_params_sheets = []
-        for i in range(len(self.cells)):
-            cell_sheet = self.output_workbook.create_sheet(title= "Cell {}".format(i+1))
-            cell_sheet.append(["Frame","Times","Pos X", "Pos Y", "Vel X", "Vel Y", "Vel Mag", "Blur", "Area", "Avg Area", "Cropped X","Cropped Y","Cropped W","Cropped H"])
-            self.cell_params_sheets.append(cell_sheet)
 
         #tell update_actions function to start appending data to the sheets
         self.save_status = True
@@ -393,13 +222,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.robot_params_sheets[i].cell(row=idx+2, column=17).value = y
                 except Exception:
                     pass
-                try:
-                    for i in range(len((self.robot_params_sheets))):
-                        for idx,(x,y) in enumerate(self.robots[i][-1]):
-                            self.robot_params_sheets[i].cell(row=idx+2, column=16).value = x
-                            self.robot_params_sheets[i].cell(row=idx+2, column=17).value = y
-                except Exception:
-                    pass
+       
             #save and close workbook
             self.output_workbook.remove(self.output_workbook["Sheet"])
             self.output_workbook.save(file_path)
@@ -418,145 +241,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.stop_data_record()
             
 
-    def apply_actions(self, status):
-        #the purpose of this function is to output the actions via arduino, 
-        # show the actions via the simulator
-        # and record the actions by appending the field_list
-        
-        #toggle between alpha and orient
-        if self.freq > 0:
-            if self.ui.swimradio.isChecked():
-                self.simulator.roll = False
-            elif self.ui.rollradio.isChecked():
-                self.alpha = self.alpha - np.pi/2
-                self.simulator.roll = True
-
-        #zero output
-        if status == False:
-            self.manual_status = False
-            self.Bx, self.By, self.Bz, self.alpha, self.gamma, self.freq, self.psi, self.acoustic_frequency = 0,0,0,0,0,0,0,0
-
-        #output current actions to simulator
-
-        self.simulator.Bx = self.Bx
-        self.simulator.By = self.By
-        self.simulator.Bz = self.Bz
-        self.simulator.alpha = self.alpha
-        self.simulator.gamma = self.gamma
-        self.simulator.psi = self.psi
-        self.simulator.freq = self.freq/15
-        self.simulator.omega = 2 * np.pi * self.simulator.freq
-
-         #send arduino commands
-        self.arduino.send(self.Bx, self.By, self.Bz, self.alpha, self.gamma, self.freq, self.psi, self.gradient_status, self.acoustic_frequency)
     
 
-
     
-    def toggle_simulation(self):
-        if self.ui.simulationbutton.isChecked():
-            self.simulator.start()
-            self.tbprint("Simulation Off")
-            self.ui.simulationbutton.setText("Simulation Off")
-        else:
-            self.simulator.stop()
-            self.tbprint("Simulation On")
-            self.ui.simulationbutton.setText("Simulation On")
+    
+
    
-    
-    
-    def toggle_control_status(self): 
-        if self.ui.controlbutton.isChecked():
-            self.control_status = True
-            self.ui.controlbutton.setText("Stop")
-            self.tbprint("Control On: {} Hz".format(self.acoustic_frequency))
-        else:
-            self.control_status = False
-            self.ui.controlbutton.setText("Control")
-            self.tbprint("Control Off")
-            self.apply_actions(False)
-            
-            
-    
-
-    def toggle_joystick_status(self):
-        if pygame.joystick.get_count() != 0:
-            if self.ui.joystickbutton.isChecked():
-                self.joystick_status = True
-                self.ui.joystickbutton.setText("Stop")
-                self.tbprint("Joystick On")
-            else:
-                self.joystick_status = False
-                self.ui.joystickbutton.setText("Joystick")
-                self.tbprint("Joystick Off")
-                self.apply_actions(False)
-        else:
-            self.tbprint("No Joystick Connected...")
-
-    def toggle_autoacoustic(self):
-        if self.tracker is not None:
-            if self.ui.autoacousticbutton.isChecked():
-                self.tracker.autoacousticstatus = True
-                self.ui.led.setStyleSheet("\n"
-"                background-color: rgb(0, 255, 0);\n"
-"                border-style: outset;\n"
-"                border-width: 3px;\n"
-"                border-radius: 12px;\n"
-"                border-color: rgb(0, 255, 0);\n"
-"         \n"
-"                padding: 6px;")
-            else:
-                self.tracker.autoacousticstatus = False
-                self.acoustic_frequency = 0
-                self.ui.led.setStyleSheet("\n"
-"                background-color: rgb(255, 0, 0);\n"
-"                border-style: outset;\n"
-"                border-width: 3px;\n"
-"                border-radius: 12px;\n"
-"                border-color: rgb(255, 0, 0);\n"
-"         \n"
-"                padding: 6px;")
-
-    def get_acoustic_frequency(self):
-        if self.ui.applyacousticbutton.isChecked():
-            self.acoustic_frequency = self.ui.acousticfreq_spinBox.value()
-            #self.tbprint("Control On: {} Hz".format(self.acoustic_frequency))
-            self.apply_acoustic()
-        
-    
-    def apply_acoustic(self):
-        if self.ui.applyacousticbutton.isChecked():
-            self.ui.applyacousticbutton.setText("Stop")
-            #self.tbprint("Control On: {} Hz".format(self.acoustic_frequency))
-            self.acoustic_frequency = self.ui.acousticfreq_spinBox.value()
-            #self.acoustic_module.start(self.acoustic_frequency, 0)
-            self.apply_actions(True)
-            self.ui.led.setStyleSheet("\n"
-"                background-color: rgb(0, 255, 0);\n"
-"                border-style: outset;\n"
-"                border-width: 3px;\n"
-"                border-radius: 12px;\n"
-"                border-color: rgb(0, 255, 0);\n"
-"         \n"
-"                padding: 6px;")
-        
-        else:
-            self.ui.applyacousticbutton.setText("Apply")
-            #self.tbprint("Acoustic Module Off")
-            #self.acoustic_module.stop()
-            self.acoustic_frequency = 0
-            self.ui.led.setStyleSheet("\n"
-"                background-color: rgb(255, 0, 0);\n"
-"                border-style: outset;\n"
-"                border-width: 3px;\n"
-"                border-radius: 12px;\n"
-"                border-color: rgb(255, 0, 0);\n"
-"         \n"
-"                padding: 6px;")
-            #self.apply_actions(False)
-       
-        
-
     def tbprint(self, text):
         #print to textbox
         self.ui.plainTextEdit.appendPlainText("$ "+ text)
@@ -576,49 +266,25 @@ class MainWindow(QtWidgets.QMainWindow):
                         newx, newy = self.convert_coords(event.pos())
                         #generate original bounding box
                         
+                 
+                        x_1 = int(newx - self.ui.robotcroplengthbox.value()  / 2)
+                        y_1 = int(newy - self.ui.robotcroplengthbox.value()  / 2)
+                        w = self.ui.robotcroplengthbox.value()
+                        h = self.ui.robotcroplengthbox.value()
 
+                        robot = Robot()  # create robot instance
+                        robot.add_frame(self.frame_number)
+                        robot.add_time(0)
+                        robot.add_position([newx,newy])
+                        robot.add_velocity([0,0,0])
+                        robot.add_crop([x_1, y_1, w, h])
+                        robot.add_area(0)
+                        robot.add_blur(0)
+                        robot.add_stuck_status(0)
+                        robot.crop_length = self.ui.robotcroplengthbox.value()
+                        self.tracker.robot_list.append(robot) #this has to include tracker.robot_list because I need to add it to that class
                         
-                     
-                        #reset algorithm nodes
-                        self.tracker.control_robot.reset()
-
-                        if self.ui.robotmask_radio.isChecked():
-                            x_1 = int(newx - self.ui.robotcroplengthbox.value()  / 2)
-                            y_1 = int(newy - self.ui.robotcroplengthbox.value()  / 2)
-                            w = self.ui.robotcroplengthbox.value()
-                            h = self.ui.robotcroplengthbox.value()
-
-                            robot = Robot()  # create robot instance
-                            robot.add_frame(self.frame_number)
-                            robot.add_time(0)
-                            robot.add_position([newx,newy])
-                            robot.add_velocity([0,0,0])
-                            robot.add_crop([x_1, y_1, w, h])
-                            robot.add_area(0)
-                            robot.add_blur(0)
-                            robot.add_stuck_status(0)
-                            robot.crop_length = self.ui.robotcroplengthbox.value()
-                            self.tracker.robot_list.append(robot) #this has to include tracker.robot_list because I need to add it to that class
-                        
-                        elif self.ui.cellmask_radio.isChecked():
-                            x_1 = int(newx - self.ui.cellcroplengthbox.value()  / 2)
-                            y_1 = int(newy - self.ui.cellcroplengthbox.value()  / 2)
-                            w = self.ui.cellcroplengthbox.value()
-                            h = self.ui.cellcroplengthbox.value()
-
-                            cell = Cell()  # create robot instance
-                            cell.add_frame(self.frame_number)
-                            cell.add_time(0)
-                            cell.add_position([newx,newy])
-                            cell.add_velocity([0,0,0])
-                            cell.add_crop([x_1, y_1, w, h])
-                            cell.add_area(0)
-                            cell.add_blur(0)
-                            cell.add_stuck_status(0)
-                            cell.crop_length = self.ui.cellcroplengthbox.value()
-                            
-                            self.tracker.cell_list.append(cell) #this has to include tracker.robot_list because I need to add it to that class
-
+        
                
                     
                     
@@ -626,18 +292,13 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.drawing = True
                         newx, newy = self.convert_coords(event.pos())
                         if len(self.tracker.robot_list) > 0:
-                            self.tracker.control_robot.reset()
-                            self.tracker.control_robot.arrived = False
                             self.tracker.robot_list[-1].add_trajectory([newx, newy])
                 
                 
                     if event.buttons() == QtCore.Qt.MiddleButton: 
                         del self.tracker.robot_list[:]
-                        del self.tracker.cell_list[:]
-                        del self.magnetic_field_list[:]
                         del self.robots[:]
-                        del self.cells[:]
-                        self.apply_actions(False)
+            
                        
                     
                             
@@ -670,35 +331,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_image(self, frame):
         """Updates the image_label with a new opencv image"""
-        #display projection
-        if self.control_status == True or self.joystick_status == True or self.manual_status == True:
-            self.projection.roll = self.ui.rollradio.isChecked()
-            frame, self.projection.draw_sideview(frame,self.Bx,self.By,self.Bz,self.alpha,self.gamma,self.video_width,self.video_height)
-            frame, self.projection.draw_topview(frame,self.Bx,self.By,self.Bz,self.alpha,self.gamma,self.video_width,self.video_height)
-            
-            rotatingfield = "alpha: {:.0f}, gamma: {:.0f}, psi: {:.0f}, freq: {:.0f}".format(np.degrees(self.alpha)+90, np.degrees(self.gamma), np.degrees(self.psi), self.freq) #adding 90 to alpha for display purposes only
-            cv2.putText(frame, rotatingfield,
-                (int(self.video_width / 1.5),int(self.video_height / 20)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                fontScale=1, 
-                thickness=4,
-                color = (255, 255, 255),
-            )
-        
-        acousticfreq = f'{self.acoustic_frequency:,} Hz'
-        cv2.putText(frame, acousticfreq,
-            (int(self.video_width / 8),int(self.video_height / 14)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=1, 
-            thickness=4,
-            color = (255, 255, 255),
-        )
-
-        
-        
-
-        
-        
+ 
         frame = self.handle_zoom(frame)
     
         self.currentframe = frame
@@ -872,7 +505,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.tracker = VideoThread(self)
                 self.tracker.change_pixmap_signal.connect(self.update_image)
                 self.tracker.cropped_frame_signal.connect(self.update_croppedimage)
-                self.tracker.actions_signal.connect(self.update_actions)
+                self.tracker.robot_list_signal.connect(self.update_actions)
                 self.tracker.start()
 
                 self.ui.trackbutton.setText("Stop")
@@ -887,18 +520,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 if self.tracker is not None:
                     self.ui.trackbutton.setText("Track")
                     self.tracker.stop()
-                    
-                    #reset control button
-                    self.control_status = False
-                    self.ui.controlbutton.setText("Control")
-                    self.tbprint("Control Off")
-                    self.ui.controlbutton.setChecked(False)
-
-                    #reset joystick button
-                    self.joystick_status = False
-                    self.ui.joystickbutton.setText("Joystick")
-                    self.tbprint("Joystick Off")
-                    self.ui.joystickbutton.setChecked(False)
+            
 
                     #reset mask button
                     self.tracker.mask_flag = False
@@ -915,19 +537,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 
 
                     #zero arduino commands
-                    self.apply_actions(False)
-                    del self.tracker.robot_list[:]
-                    del self.magnetic_field_list[:]
 
-                    self.ui.applyacousticbutton.setChecked(False)
-                    self.ui.led.setStyleSheet("\n"
-                    "                background-color: rgb(255, 0, 0);\n"
-                    "                border-style: outset;\n"
-                    "                border-width: 3px;\n"
-                    "                border-radius: 12px;\n"
-                    "                border-color: rgb(255, 0, 0);\n"
-                    "         \n"
-                    "                padding: 6px;")
+                    del self.tracker.robot_list[:]
+
 
             
 
@@ -959,10 +571,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.tracker is not None:
             self.tracker.exposure = self.ui.exposurebox.value()
             
-    def checkorient(self):
-        if self.tracker is not None:
-            self.tracker.orientstatus = self.ui.orientradio.isChecked()
-
+    
     def invertmaskcommand(self):
         if self.tracker is not None:
             self.ui.maskinvert_checkBox.setText("Invert Mask: " + str(self.ui.maskinvert_checkBox.isChecked()))
@@ -992,33 +601,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     
     
-    def update_halleffect_sensor(self, vals):
-        sensorBx, sensorBy, sensorBz = vals
-        self.ui.bxlabel.setText("Bx:{}".format(sensorBx))
-        self.ui.bylabel.setText("By:{}".format(sensorBy))
-        self.ui.bzlabel.setText("Bz:{}".format(sensorBz))
-        self.sensorBx = sensorBx
-        self.sensorBy = sensorBy
-        self.sensorBz = sensorBz
     
-    def get_manual_bfieldbuttons(self):
-        if self.ui.manualapplybutton.isChecked():
-            self.manual_status = True
-            self.ui.manualapplybutton.setText("Stop")
-        else:
-            self.ui.manualapplybutton.setText("Apply")
-            self.apply_actions(False)
     
 
-
-       
     def get_slider_vals(self):
-        memory = self.ui.memorybox.value()
-        RRTtreesize = self.ui.RRTtreesizebox.value()
-        arrivalthresh = self.ui.arrivalthreshbox.value()
-        magneticfreq = self.ui.magneticfrequencydial.value()
-        gamma = self.ui.gammadial.value()
-        psi = self.ui.psidial.value()
         #alpha = self.ui.alphaspinBox.value()
         
         robotlower = self.ui.robotmasklowerbox.value() 
@@ -1026,36 +612,17 @@ class MainWindow(QtWidgets.QMainWindow):
         robotdilation = self.ui.robotmaskdilationbox.value() 
         robotmaskblur = self.ui.robotmaskblurbox.value()
         robotcrop_length = self.ui.robotcroplengthbox.value()
-        
-        celllower = self.ui.cellmasklowerbox.value() 
-        cellupper = self.ui.cellmaskupperbox.value()
-        celldilation = self.ui.cellmaskdilationbox.value() 
-        cellmaskblur = self.ui.cellmaskblurbox.value()
-        cellcrop_length = self.ui.cellcroplengthbox.value()
-        
+
 
         if self.tracker is not None: 
-            self.tracker.memory = memory
-            self.tracker.RRTtreesize = RRTtreesize
-            self.tracker.arrivalthresh = arrivalthresh
-          
+
             self.tracker.robot_mask_lower = robotlower
             self.tracker.robot_mask_upper = robotupper
             self.tracker.robot_mask_dilation = robotdilation
             self.tracker.robot_mask_blur = robotmaskblur
             self.tracker.robot_crop_length = robotcrop_length
-            
-    
-            self.tracker.cell_mask_lower = celllower
-            self.tracker.cell_mask_upper = cellupper
-            self.tracker.cell_mask_dilation = celldilation
-            self.tracker.cell_mask_blur = cellmaskblur
-            self.tracker.cell_crop_length = cellcrop_length
-            
 
-        self.ui.gammalabel.setText("Gamma: {}".format(gamma))
-        self.ui.psilabel.setText("Psi: {}".format(psi))
-        self.ui.rollingfrequencylabel.setText("Freq: {}".format(magneticfreq))
+
 
          
         
@@ -1065,22 +632,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.robotmaskdilationbox.setValue(0)
         self.ui.robotmaskblurbox.setValue(0)
         self.ui.robotcroplengthbox.setValue(40)
-
-        self.ui.cellmasklowerbox.setValue(0)
-        self.ui.cellmaskupperbox.setValue(128)
-        self.ui.cellmaskdilationbox.setValue(0)
-        self.ui.cellmaskblurbox.setValue(0)
-        self.ui.cellcroplengthbox.setValue(40)
-        
-
-    
-        self.ui.memorybox.setValue(15)
-        self.ui.RRTtreesizebox.setValue(25)
-        self.ui.arrivalthreshbox.setValue(100)
-        self.ui.gammadial.setSliderPosition(90)
-        self.ui.psidial.setSliderPosition(90)
-        self.ui.magneticfrequencydial.setSliderPosition(10)
-        self.ui.acousticfreq_spinBox.setValue(1000000)
         self.ui.objectivebox.setValue(10)
         self.ui.exposurebox.setValue(5000)
         
@@ -1166,8 +717,5 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.tracker is not None:
             self.tracker.stop()
         #self.recorder.stop()
-        
-        self.simulator.stop()
-        self.apply_actions(False)
-        self.halleffect.stop()
+
         self.arduino.close()
