@@ -80,7 +80,7 @@ class MainWindow(QtWidgets.QMainWindow):
             home_dir = expanduser("~")
             new_dir_name = "Tracking Data"
             desktop_path = os.path.join(home_dir, "Desktop")
-            self.new_dir_path = os.path.join(desktop_path, new_dir_name)
+            self.new_dir_path = "Tracking Data"
             if not os.path.exists(self.new_dir_path):
                 os.makedirs(self.new_dir_path)
 
