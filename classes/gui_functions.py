@@ -33,6 +33,7 @@ from classes.gui_widgets import Ui_MainWindow
 from classes.arduino_class import ArduinoHandler
 from classes.robot_class import Robot
 from classes.record_class import RecordThread
+from classes.algorithm_class import algorithm
 
 
 
@@ -101,6 +102,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.arduino = ArduinoHandler(self.tbprint)
         self.arduino.connect(PORT)
+        self.algorithm = algorithm()
 
 
 
@@ -160,8 +162,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         #insert algorithm below
+        Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list)
+        
+        self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
 
-        self.arduino.send(0,0,0,0,0,0,0,0,0)
+
+
+
+
+
 
 
         #DEFINE CURRENT ROBOT PARAMS TO A LIST
@@ -239,13 +248,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.savedatabutton.setText("Save Data")
             self.date = datetime.now().strftime('%Y.%m.%d-%H.%M.%S')
             self.stop_data_record()
-            
-
-    
-
-    
-    
-
    
     def tbprint(self, text):
         #print to textbox

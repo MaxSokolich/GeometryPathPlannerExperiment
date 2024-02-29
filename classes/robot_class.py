@@ -6,7 +6,7 @@ class Robot:
 
     Args:
         None
-    """
+    """ 
 
     def __init__(self):
         self.velocity_list = []  # stores bot velocities per frame
