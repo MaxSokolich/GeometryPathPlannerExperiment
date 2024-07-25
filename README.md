@@ -1,4 +1,4 @@
-This is a repo containing just tracking information from a FLIR Blackfly camera
+This is a repo containing the microrobotic control user interface for a novel geometry based path planning obstacle avoidance algorithm.
 
 
 
