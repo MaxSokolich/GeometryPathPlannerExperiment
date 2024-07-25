@@ -6,14 +6,17 @@ import numpy as np
 
 
 class geo_algorithm:
-    def __init__(self, image, start_point, end_point):
+    def __init__(self, image, start_point, end_point, alpha_geo, safety_radius, deltas):
         self.start_time = time.time()
 
         self.image = image
-        self.safety_radius = 0.85
-        self.alpha = 3
-        self.deltas = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # hyperparameter
+        self.safety_radius = safety_radius
+        self.alpha = alpha_geo
+        
 
+        self.deltas = deltas # hyperparameter
+
+        print(deltas)
         self.start_point = start_point
         self.end_point = end_point
 
@@ -443,10 +446,6 @@ class geo_algorithm:
                 break
 
             
-
-
-
-   
 
         print(f"total length: {total_length:.2f}")
 

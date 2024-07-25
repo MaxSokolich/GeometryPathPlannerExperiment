@@ -54,7 +54,7 @@ class control_algorithm:
             Bx = 0 #disregard
             By = 0 #disregard
             Bz = 0 #disregard
-            alpha = np.arctan2(-direction_vec[1], direction_vec[0])  
+            alpha = np.arctan2(-direction_vec[1], direction_vec[0])  - np.pi/2
             gamma = np.pi/2   #disregard
             freq = 10    #CHANGE THIS EACH FRAME
             psi = np.pi/2      #disregard

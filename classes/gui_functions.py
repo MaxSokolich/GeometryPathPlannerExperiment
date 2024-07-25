@@ -166,8 +166,20 @@ class MainWindow(QtWidgets.QMainWindow):
         print(start_point, end_point)
         
 
-
-        pathplanner = geo_algorithm(image, start_point, end_point)
+        alpha_geo = self.ui.alphabox.value() 
+        safety_radius = self.ui.safetyradiusbox.value()
+        deltas = [self.ui.delta_1.value(),
+                  self.ui.delta_2.value(),
+                  self.ui.delta_3.value(),
+                  self.ui.delta_4.value(),
+                  self.ui.delta_5.value(),
+                  self.ui.delta_6.value(),
+                  self.ui.delta_7.value(),
+                  self.ui.delta_8.value(),
+                  self.ui.delta_9.value(),
+                  self.ui.delta_10.value()]
+        
+        pathplanner = geo_algorithm(image, start_point, end_point, alpha_geo, safety_radius, deltas)
         trajectory_nodes = pathplanner.run()
 
         self.tracker.robot_list[-1].trajectory = trajectory_nodes
