@@ -1,43 +1,58 @@
+import numpy as np
+import cv2
 
-
-class algorithm:
+class control_algorithm:
     def __init__(self):
-        pass
+        self.node = 0
 
-    def run(self, robot_list):
+    def run(self, robot_list, frame):
         
-        
-        #input:  robot_list which stores all the attributes for each robot you select
-        for bot_num in range(len(robot_list)):
-            robot = robot_list[bot_num]
-            pos = robot.position_list[-1]
-            print("robot {} pos = {}".format(bot_num, pos))
-        
-        print("\n\n")
+ 
+        pts = np.array(robot_list[-1].trajectory, np.int32)
+        cv2.polylines(frame, [pts], False, (0, 0, 255), 4)
+         
 
-        
-        #middle: define a trajectory
-        trajectory_nodes = [[400, 400], [1800,400], [400, 1800], [1800, 1800]]
-        
-        
-        """
-        right = Bx = 1
-        left = Bx = -1
+        #logic for arrival condition
+        if self.node == len(robot_list[-1].trajectory):
+            #weve arrived
+           
+            Bx = 0 #disregard
+            By = 0 #disregard
+            Bz = 0 #disregard
+            alpha = 0
+            gamma = np.pi/2   #disregard
+            freq = 0    #CHANGE THIS EACH FRAME
+            psi = np.pi/2      #disregard
+            gradient = 0 # #disregard
+            acoustic_freq = 0  #disregard
 
-        up = By = 1
-        down = By = -1
-        """
-        #output: actions which is the magetnic field commands applied to the arduino
 
-        Bx = 0 
-        By = 0 
-        Bz = 0
-        alpha = 0 
-        gamma = 0
-        freq = 0
-        psi = 0
-        gradient = 1 # gradient has to be 1 for the gradient thing to work
-        acoustic_freq = 0
+        #closed loop algorithm 
+        else:
+            #define target coordinate
+            targetx = robot_list[-1].trajectory[self.node][0]
+            targety = robot_list[-1].trajectory[self.node][1]
+
+            #define robots current position
+            robotx = robot_list[-1].position_list[-1][0]
+            roboty = robot_list[-1].position_list[-1][1]
+            
+            #calculate error between node and robot
+            direction_vec = [targetx - robotx, targety - roboty]
+            error = np.sqrt(direction_vec[0] ** 2 + direction_vec[1] ** 2)
+            if error < 10:
+                self.node += 1
+            
+                
+            Bx = 0 #disregard
+            By = 0 #disregard
+            Bz = 0 #disregard
+            alpha = np.arctan2(-direction_vec[1], direction_vec[0])  
+            gamma = np.pi/2   #disregard
+            freq = 10    #CHANGE THIS EACH FRAME
+            psi = np.pi/2      #disregard
+            gradient = 0 # #disregard
+            acoustic_freq = 0  #disregard
         
         
-        return Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq
+        return frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq

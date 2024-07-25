@@ -11,9 +11,9 @@ from classes.fps_class import FPSCounter
     
 #add unique crop length 
 class VideoThread(QThread):
-    change_pixmap_signal = pyqtSignal(np.ndarray)
+    change_pixmap_signal = pyqtSignal(np.ndarray, list)
     cropped_frame_signal = pyqtSignal(np.ndarray,np.ndarray)
-    robot_list_signal = pyqtSignal(list)
+  
 
 
     def __init__(self, parent):
@@ -58,7 +58,7 @@ class VideoThread(QThread):
         self.cell_mask_flag = False
         self.cell_list = []
 
-        
+        self.robot_mask = None
         self.maskinvert = False
         self.crop_length_record = 200
         
@@ -257,7 +257,8 @@ class VideoThread(QThread):
                     pts = np.array(bot.trajectory, np.int32)
                     cv2.polylines(display_frame, [pts], False, (0, 0, 255), 4)
                     tar = targets[-1]
-                    cv2.circle(display_frame,(int(tar[0]), int(tar[1])),6,(0,0,0), -1,)
+                    cv2.circle(display_frame,(int(tar[0]), int(tar[1])),20,(0,255,255), -1,)
+                    cv2.putText(display_frame,str(botnum+1),(tar[0] + 20,tar[1] + 20),cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, thickness=4,color = (0, 255, 255))
         
 
         
@@ -322,8 +323,8 @@ class VideoThread(QThread):
                     
 
                 #step 1 track robot
-                robot_mask = self.find_robot_mask(frame)
-                robotcroppedmask, recorded_cropped_frame = self.track_robot(frame, robot_mask) 
+                self.robot_mask = self.find_robot_mask(frame)
+                robotcroppedmask, recorded_cropped_frame = self.track_robot(frame, self.robot_mask) 
                 
 
                 #step 2.5: subtract robots from cell mask. first create an inital mask using cell mask params. then remove the robot from this inital mask. then find the mask again on this first mask and use this for tracking
@@ -337,7 +338,7 @@ class VideoThread(QThread):
                 if True:
                     croppedmask = robotcroppedmask
                     if self.mask_flag == True:
-                        frame = cv2.cvtColor(robot_mask, cv2.COLOR_GRAY2BGR)
+                        frame = cv2.cvtColor(self.robot_mask, cv2.COLOR_GRAY2BGR)
 
                 
                 
@@ -345,16 +346,12 @@ class VideoThread(QThread):
 
                 #step 2 control robot
                 
-                    
-                #gather most recent robot params
                 
                 #step 3: emit croppedframe, frame from this thread to the main thread
                 self.cropped_frame_signal.emit(croppedmask, recorded_cropped_frame)
-                self.change_pixmap_signal.emit(displayframe)
-                self.robot_list_signal.emit(self.robot_list)
-                
-                
-
+                self.change_pixmap_signal.emit(displayframe, self.robot_list)
+            
+            
                 #step 4: delay based on fps
                 if self.totalnumframes !=0:
                     interval = 1/self.videofps  #use original fps used to record the video if not live
