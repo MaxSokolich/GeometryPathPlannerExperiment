@@ -573,8 +573,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>195</y>
-        <width>91</width>
+        <y>175</y>
+        <width>61</width>
         <height>20</height>
        </rect>
       </property>
@@ -603,7 +603,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>190</y>
+        <y>170</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -622,8 +622,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>255</y>
-        <width>91</width>
+        <y>235</y>
+        <width>61</width>
         <height>20</height>
        </rect>
       </property>
@@ -635,7 +635,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>250</y>
+        <y>230</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -654,8 +654,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>135</y>
-        <width>91</width>
+        <y>115</y>
+        <width>61</width>
         <height>21</height>
        </rect>
       </property>
@@ -679,7 +679,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>130</y>
+        <y>110</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -698,8 +698,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>165</y>
-        <width>91</width>
+        <y>145</y>
+        <width>61</width>
         <height>21</height>
        </rect>
       </property>
@@ -728,7 +728,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>160</y>
+        <y>140</y>
         <width>61</width>
         <height>25</height>
        </rect>
@@ -800,8 +800,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>225</y>
-        <width>91</width>
+        <y>205</y>
+        <width>61</width>
         <height>21</height>
        </rect>
       </property>
@@ -833,7 +833,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>220</y>
+        <y>200</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -848,37 +848,12 @@ QPushButton {
        <string>Upper Thresh</string>
       </property>
      </widget>
-     <widget class="QSpinBox" name="numobstaclesbox">
-      <property name="geometry">
-       <rect>
-        <x>110</x>
-        <y>40</y>
-        <width>91</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="minimum">
-       <number>1</number>
-      </property>
-      <property name="maximum">
-       <number>100</number>
-      </property>
-      <property name="singleStep">
-       <number>1</number>
-      </property>
-      <property name="value">
-       <number>10</number>
-      </property>
-      <property name="displayIntegerBase">
-       <number>10</number>
-      </property>
-     </widget>
      <widget class="QLabel" name="numobstaclelabel">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>40</y>
-        <width>81</width>
+        <x>200</x>
+        <y>30</y>
+        <width>101</width>
         <height>25</height>
        </rect>
       </property>
@@ -889,14 +864,14 @@ QPushButton {
        </size>
       </property>
       <property name="text">
-       <string>Num Obstacles</string>
+       <string>Obstacle Number</string>
       </property>
      </widget>
      <widget class="QLabel" name="safteyradius">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>70</y>
+        <y>50</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -915,8 +890,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>105</y>
-        <width>91</width>
+        <y>85</y>
+        <width>61</width>
         <height>21</height>
        </rect>
       </property>
@@ -940,7 +915,7 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>100</y>
+        <y>80</y>
         <width>81</width>
         <height>25</height>
        </rect>
@@ -959,8 +934,8 @@ QPushButton {
       <property name="geometry">
        <rect>
         <x>110</x>
-        <y>70</y>
-        <width>91</width>
+        <y>50</y>
+        <width>61</width>
         <height>22</height>
        </rect>
       </property>
@@ -969,6 +944,256 @@ QPushButton {
       </property>
       <property name="value">
        <double>0.500000000000000</double>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_1">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>60</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_2">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>80</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_3">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>100</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_4">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>120</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_8">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>200</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_6">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>160</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_7">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>180</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_5">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>140</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_10">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>240</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
+      </property>
+     </widget>
+     <widget class="QSpinBox" name="delta_9">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>220</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="minimum">
+       <number>0</number>
+      </property>
+      <property name="maximum">
+       <number>100</number>
+      </property>
+      <property name="singleStep">
+       <number>1</number>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+      <property name="displayIntegerBase">
+       <number>10</number>
       </property>
      </widget>
     </widget>
