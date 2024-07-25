@@ -195,8 +195,6 @@ class MainWindow(QtWidgets.QMainWindow):
         #insert algorithm below
         if self.algorithm_status == True:
 
-        
-
             frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list, frame)
             
             self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
@@ -465,9 +463,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def setFile(self):
         if self.videopath == 0:
             try:
-                #self.cap  = cv2.VideoCapture(0) 
-                self.cap  = EasyPySpin.VideoCapture(0)
-                self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
+                self.cap  = cv2.VideoCapture(0) 
+                
+                #self.cap  = EasyPySpin.VideoCapture(0)
+                #self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
             except Exception:
