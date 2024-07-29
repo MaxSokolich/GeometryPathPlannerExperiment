@@ -40,7 +40,7 @@ class control_algorithm:
             #calculate error between node and robot
             direction_vec = [targetx - robotx, targety - roboty]
             error = np.sqrt(direction_vec[0] ** 2 + direction_vec[1] ** 2)
-            if error < 30:
+            if error < 40:
                 self.node += 1
             
             cv2.arrowedLine(
@@ -56,7 +56,7 @@ class control_algorithm:
             Bz = 0 #disregard
             alpha = np.arctan2(-direction_vec[1], direction_vec[0])  - np.pi/2
             gamma = np.pi/2   #disregard
-            freq = 10    #CHANGE THIS EACH FRAME
+            freq = 5    #CHANGE THIS EACH FRAME
             psi = np.pi/2      #disregard
             gradient = 0 # #disregard
             acoustic_freq = 0  #disregard

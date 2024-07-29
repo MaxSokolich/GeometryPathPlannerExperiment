@@ -68,7 +68,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
       
 
-        self.new_dir_path = "Tracking Data"
+        self.new_dir_path = "d:\geoplanner\Tracking Data"
         if not os.path.exists(self.new_dir_path):
             os.makedirs(self.new_dir_path)
 
@@ -83,7 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif "Windows" in platform.platform():
             self.tbprint("Detected OS:  Windows")
-            PORT = "COM3"
+            PORT = "COM4"
         else:
             self.tbprint("undetected operating system")
             PORT = None

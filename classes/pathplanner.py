@@ -286,10 +286,10 @@ class geo_algorithm:
         filtered_R_c = []
 
         # 确定矩形区域的边界
-        min_x = min(SP_x, EP_x)
-        max_x = max(SP_x, EP_x)
-        min_y = min(SP_y, EP_y)
-        max_y = max(SP_y, EP_y)
+        min_x = min(SP_x, EP_x) - 50
+        max_x = max(SP_x, EP_x) + 50
+        min_y = min(SP_y, EP_y) - 50
+        max_y = max(SP_y, EP_y) + 50
 
 
         for i, (x, y) in enumerate(zip(p_cx, p_cy)):
