@@ -200,7 +200,7 @@ class geo_algorithm:
         return new_end_points
 
     # find next closest points
-    def closest_two_points(origin, points, R_c, intersections):
+    def closest_two_points(self, origin, points, R_c, intersections):
         # 创建points、R_c和intersections的副本
         points_copy = copy.deepcopy(points)
         R_c_copy = copy.deepcopy(R_c)
