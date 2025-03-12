@@ -254,11 +254,11 @@ class VideoThread(QThread):
 
                 targets = bot.trajectory
                 if len(targets) > 0:
-                    pts = np.array(bot.trajectory, np.int32)
-                    cv2.polylines(display_frame, [pts], False, (0, 0, 255), 4)
+                    #pts = np.array(bot.trajectory, np.int32)
+                    #cv2.polylines(display_frame, [pts], False, (0, 0, 255), 4)
                     tar = targets[-1]
-                    cv2.circle(display_frame,(int(tar[0]), int(tar[1])),20,(0,255,255), -1,)
-                    cv2.putText(display_frame,str(botnum+1),(tar[0] + 20,tar[1] + 20),cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, thickness=4,color = (0, 255, 255))
+                    cv2.circle(display_frame,(int(tar[0]), int(tar[1])),10,(0,255,255), -1,)
+                    #cv2.putText(display_frame,str(botnum+1),(tar[0] + 20,tar[1] + 20),cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, thickness=4,color = (0, 255, 255))
         
 
         

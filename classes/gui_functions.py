@@ -35,6 +35,9 @@ from classes.robot_class import Robot
 from classes.record_class import RecordThread
 from classes.algorithm_class import control_algorithm
 from classes.pathplanner import geo_algorithm
+from classes.APG_dynamic import run_dynamic
+
+
 
 class MainWindow(QtWidgets.QMainWindow):
     positionChanged = QtCore.pyqtSignal(QtCore.QPoint)
@@ -111,12 +114,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dynamic_algorithm_status = False
     
         
-
+        self.total_length, self.obstacle_amount = 0,0
+        
+        
+        
         self.setFile()
 
-
-        
-    
         self.ui.trackbutton.clicked.connect(self.track)
 
         self.ui.maskbutton.clicked.connect(self.showmask)
@@ -182,10 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
                   self.ui.delta_10.value()]
         
         pathplanner = geo_algorithm(image, start_point, end_point, alpha_geo, safety_radius, deltas)
-        
-        
         trajectory_nodes = pathplanner.run()
-
         self.tracker.robot_list[-1].trajectory = trajectory_nodes
   
 
@@ -197,15 +197,23 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.apply_static_button.setText("Stop")
             self.static_algorithm_status = True
             self.algorithm = control_algorithm()
-
-        
         else:
             self.ui.apply_static_button.setText("Apply Static")
             self.static_algorithm_status = False
     
 
+
     def apply_dynamic_func(self):
-        pass
+        if self.ui.apply_dynamic_button.isChecked():
+            self.ui.apply_dynamic_button.setText("Stop")
+            self.dynamic_algorithm_status = True
+        else:
+            self.ui.apply_dynamic_button.setText("Apply Dynamic")
+            self.dynamic_algorithm_status = False
+
+
+
+
 
 
 
@@ -214,45 +222,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #static algoruthm 
         if self.static_algorithm_status == True:
-
             frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list, frame)
             
             self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+        
+
+
+        #dynamic algorithm
+        elif self.dynamic_algorithm_status == True:
+            
+            start = (robot_list[-1].position_list[-1][0], robot_list[-1].position_list[-1][1])
+            
+            
+            end = (robot_list[-1].trajectory[-1][0], robot_list[-1].trajectory[-1][1])
+            
+            
+            frame, waypoints, self.total_length, self.obstacle_amount = run_dynamic(frame, start, end)
+
+            #pts = np.array(waypoints, np.int32)
+            #cv2.polylines(frame, [pts], False, (0, 0, 255), 5)
+        
+        
+        
         else:
             self.arduino.send(0, 0, 0, 0, 0, 0, 0, 0, 0)
 
         #dynamic algorithm
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -269,8 +264,9 @@ class MainWindow(QtWidgets.QMainWindow):
                                      bot.area_list[-1],
                                      bot.avg_area,
                                      bot.cropped_frame[-1][0],bot.cropped_frame[-1][1],bot.cropped_frame[-1][2],bot.cropped_frame[-1][3],
-                                     bot.stuck_status_list[-1],
-                                     bot.trajectory,
+                                     self.total_length,
+                                     self.obstacle_amount,
+                                     bot.trajectory
                                     ]
                 
                 self.robots.append(currentbot_params)
@@ -293,8 +289,7 @@ class MainWindow(QtWidgets.QMainWindow):
         p = convert_to_Qt_format.scaled(self.display_width, self.display_height, Qt.KeepAspectRatio)
         qt_img = QPixmap.fromImage(p)
        
-        #update frame slider too
-        self.ui.framelabel.setText("Frame:"+str(self.frame_number))
+
         if self.videopath !=0:
             self.ui.frameslider.setValue(self.tracker.framenum)
         
@@ -314,13 +309,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def start_data_record(self):
         self.output_workbook = openpyxl.Workbook()
-            
-
         #create sheet for robot data
         self.robot_params_sheets = []
         for i in range(len(self.robots)):
             robot_sheet = self.output_workbook.create_sheet(title= "Robot {}".format(i+1))
-            robot_sheet.append(["Frame","Times","Pos X", "Pos Y", "Vel X", "Vel Y", "Vel Mag", "Blur", "Area", "Avg Area", "Cropped X","Cropped Y","Cropped W","Cropped H","Stuck?","Path X", "Path Y"])
+            robot_sheet.append(["Frame","Times","Pos X", "Pos Y", "Vel X", "Vel Y", "Vel Mag", "Blur", "Area", "Avg Area", 
+                                "Cropped X","Cropped Y","Cropped W","Cropped H", "total_length", "obstacle_amount", "Path X", "Path Y"])
             self.robot_params_sheets.append(robot_sheet)
         
 
@@ -340,8 +334,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 try:
                     for i in range(len((self.robot_params_sheets))):
                         for idx,(x,y) in enumerate(self.robots[i][-1]):
-                            self.robot_params_sheets[i].cell(row=idx+2, column=16).value = x
-                            self.robot_params_sheets[i].cell(row=idx+2, column=17).value = y
+                            self.robot_params_sheets[i].cell(row=idx+2, column=17).value = x
+                            self.robot_params_sheets[i].cell(row=idx+2, column=18).value = y
                 except Exception:
                     pass
        
@@ -518,10 +512,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def setFile(self):
         if self.videopath == 0:
             try:
-                #self.cap  = cv2.VideoCapture(0) 
+                self.cap  = cv2.VideoCapture(0) 
                 
-                self.cap  = EasyPySpin.VideoCapture(0)
-                self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
+                #self.cap  = EasyPySpin.VideoCapture(0)
+                #self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
             except Exception:
@@ -658,7 +652,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tracker.maskinvert = self.ui.maskinvert_checkBox.isChecked()
 
     
-            self.ui.framelabel.setText("Frame:"+str(self.tracker.framenum))
+            
 
     
     

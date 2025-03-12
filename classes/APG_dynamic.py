@@ -21,11 +21,22 @@ excel_path = "/Users/yanda/Downloads/frame_data11.xlsx"
 records = []
 frame_index = 0
 
-while cap.isOpened():
+def run_dynamic(mask, start, end):
+    image = mask
+    
+    
+    
+    #image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
-    ret, image = cap.read()
-    if not ret:
-        break
+
+    SP_x, SP_y = start[0], start[1]
+    EP_x, EP_y = end[0], end[1]
+
+
+
+    #ret, image = cap.read()
+    #if not ret:
+    #    break
 
     #image_path = ‘’
     alpha = 6
@@ -112,11 +123,11 @@ while cap.isOpened():
             center_x = x_new + w_new / 2
             center_y_original = y_new + h_new / 2
             # 如果需要以左下角为原点，则转换 y 坐标
-            center_y = image_height - center_y_original
+            center_y = center_y_original
             
             radius = int(0.5 * np.sqrt(w_new**2 + h_new**2))
 
-            #cv2.circle(image, (int(center_x), image_height - int(center_y)), radius, (0, 255, 0), 3)
+            #cv2.circle(image, (int(center_x), int(center_y)), radius, (0, 255, 0), 3)
             
             centers_radius_white.append(((center_x, center_y), radius, (x_new, y_new, w_new, h_new)))
             all_bboxes.append((x_new, y_new, w_new, h_new))
@@ -126,7 +137,7 @@ while cap.isOpened():
         #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)
         
         center_x = x + w / 2
-        center_y = image_height - (y + h / 2)
+        center_y = (y + h / 2)
         
         centers_red.append((center_x, center_y))
 
@@ -135,16 +146,21 @@ while cap.isOpened():
         #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 255), 2)
 
         center_x = x + w / 2
-        center_y = image_height - (y + h / 2)
+        center_y = (y + h / 2)
         
         centers_yellow.append((center_x, center_y))
 
     # 初始参数设置
-    SP_x, SP_y = centers_red[0][0], centers_red[0][1]
+    #SP_x, SP_y = centers_red[0][0], centers_red[0][1]
     SP_ini = (SP_x, SP_y)
-    EP_x, EP_y = centers_yellow[0][0], centers_yellow[0][1]
+    #EP_x, EP_y = centers_yellow[0][0], centers_yellow[0][1]
     EP_ini = (EP_x, EP_y)
 
+
+
+
+
+    
     def run_entire_code(SP_ini, EP_ini, img):
 
         SP_x, SP_y = SP_ini[0], SP_ini[1]
@@ -193,7 +209,7 @@ while cap.isOpened():
             y_points = np.linspace(y1, y2, num=int(num_points/30), dtype=int)
 
             for x, y in zip(x_points, y_points):
-                cv2.circle(image, (x, image_height - y), thickness, color, -1)
+                cv2.circle(image, (x, y), thickness, color, -1)
 
         def intersection_points(point1, slopes, point2, k):
             x1, y1 = point1
@@ -399,7 +415,7 @@ while cap.isOpened():
             end_points = []
             for slope in slopes:
                 delta_y = slope * delta_x
-                end_point = (int(x + delta_x), int(image_height - y - delta_y))
+                end_point = (int(x + delta_x), int(y + delta_y))
                 end_points.append(end_point)
             
             return end_points
@@ -639,10 +655,10 @@ while cap.isOpened():
         # selected obstacles' radius including hyperparameter
         updated_R_c = [r + d for r, d in zip(R_c_dyn, deltas)]
         for (x, y), radius in zip(sorted_p_c, R_c_dyn):
-            cv2.circle(image, (int(x), image_height - int(y)), int(radius), (0, 255, 0), 3)
+            cv2.circle(image, (int(x), int(y)), int(radius), (0, 255, 0), 3)
         # circle with hyperparameter
         for (x, y), radius in zip(sorted_p_c, updated_R_c):
-            draw_dashed_circle(image, (int(x), image_height - int(y)), int(radius), (0, 255, 0), 3, 50)
+            draw_dashed_circle(image, (int(x), int(y)), int(radius), (0, 255, 0), 3, 50)
 
         # predefined
         k1 = (EP_y - SP_y) / (EP_x - SP_x)
@@ -719,9 +735,9 @@ while cap.isOpened():
                 continue
             
             # 用 far_pair 中的两个交点与 waypoint_current 构成三角形
-            triangle_vertices = [(waypoint_current[0], image_height - waypoint_current[1]), 
-                                (far_pair[0][0], image_height - far_pair[0][1]), 
-                                (far_pair[1][0], image_height - far_pair[1][1])]
+            triangle_vertices = [(waypoint_current[0], waypoint_current[1]), 
+                                (far_pair[0][0], far_pair[0][1]), 
+                                (far_pair[1][0], far_pair[1][1])]
             
             # 在 image_test 上用蓝色透明填充该三角区域，蓝色 BGR=(255, 0, 0)，透明度 0.5
             if triangle:
@@ -734,24 +750,24 @@ while cap.isOpened():
 
         if debug:
             for (x,y) in waypoints:
-                cv2.circle(image, (int(x), image_height - int(y)), radius=20, color=(255, 255, 0), thickness=-1)
+                cv2.circle(image, (int(x), int(y)), radius=20, color=(255, 255, 0), thickness=-1)
 
             # selected obstacles' center
             for (pcx, pcy) in p_c:
-                cv2.circle(image, (int(pcx), image_height - int(pcy)), radius=10, color=(255, 0, 0), thickness=-1)
+                cv2.circle(image, (int(pcx), int(pcy)), radius=10, color=(255, 0, 0), thickness=-1)
 
             # draw intersection point
             for(x0,y0) in sorted_intersections:
-                cv2.circle(image, (int(x0), image_height - int(y0)), radius=10, color=(255, 0, 0), thickness=-1)
+                cv2.circle(image, (int(x0), int(y0)), radius=10, color=(255, 0, 0), thickness=-1)
 
             # selected obstacles' perpendicular lines
             for (pc, intersection) in zip(sorted_p_c, sorted_intersections):
                 x1, y1 = int(pc[0]), int(pc[1])
                 x2, y2 = int(intersection[0]), int(intersection[1])
-                draw_dashed_line(image, (x1, image_height - y1), (x2, image_height - y2), (255, 0, 0), 5, 25)
+                draw_dashed_line(image, (x1, y1), (x2, y2), (255, 0, 0), 5, 25)
 
             # optimal path
-            draw_dashed_line(image, (int(SP_x), image_height - int(SP_y)), (int(EP_x), image_height - int(EP_y)), (0, 128, 255), 5, 100)
+            draw_dashed_line(image, (int(SP_x), int(SP_y)), (int(EP_x), int(EP_y)), (0, 128, 255), 5, 100)
 
         #print(f"total length: {total_length:.2f}")
 
@@ -759,7 +775,7 @@ while cap.isOpened():
             cv2.putText(
                 image,              # 图像
                 str(idx+1),            # 文本内容
-                (int(x)-15, image_height-int(y)+5),        # 坐标转换为整数
+                (int(x)-15, int(y)+5),        # 坐标转换为整数
                 cv2.FONT_HERSHEY_SIMPLEX,# 字体
                 2,                       # 字体大小
                 (0, 0, 255),             # 颜色 (BGR)
@@ -767,12 +783,15 @@ while cap.isOpened():
             )'''
             
 
-        return image, total_length, obstacle_amount
+        return image, total_length, obstacle_amount, waypoints
+    
     
     # 对每一帧进行处理
-    processed_frame, total_length, obstacle_amount = run_entire_code(SP_ini, EP_ini, image)
+    processed_frame, total_length, obstacle_amount, waypoints = run_entire_code(SP_ini, EP_ini, image)
 
-    # 显示处理后的帧
+    return processed_frame, waypoints, total_length, obstacle_amount
+
+    """# 显示处理后的帧
     cv2.imshow('geo', processed_frame)
 
     processing_time = time.time() - start_time
@@ -788,12 +807,12 @@ while cap.isOpened():
 
     # 按 'q' 键退出
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        break"""
 
-cap.release()
+"""cap.release()
 out.release()
 cv2.destroyAllWindows()
 
 df = pd.DataFrame(records)
 df.to_excel(excel_path, index=False)
-print("Excel 文件已保存：frame_data.xlsx")
+print("Excel 文件已保存：frame_data.xlsx")"""
