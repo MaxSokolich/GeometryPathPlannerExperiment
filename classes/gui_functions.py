@@ -107,7 +107,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.save_status = False
         self.output_workbook = None
-        self.algorithm_status = False
+        self.static_algorithm_status = False
+        self.dynamic_algorithm_status = False
     
         
 
@@ -139,7 +140,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.croppedrecordbutton.clicked.connect(self.croppedrecordfunction)
         self.ui.choosevideobutton.clicked.connect(self.selectFile)
 
-        self.ui.algorithbutton.clicked.connect(self.apply_algorithm)
+        self.ui.apply_static_button.clicked.connect(self.apply_static_func)
+        self.ui.apply_dynamic_button.clicked.connect(self.apply_dynamic_func)
         self.ui.generatepathbutton.clicked.connect(self.generatepathfunc)
 
   
@@ -180,6 +182,8 @@ class MainWindow(QtWidgets.QMainWindow):
                   self.ui.delta_10.value()]
         
         pathplanner = geo_algorithm(image, start_point, end_point, alpha_geo, safety_radius, deltas)
+        
+        
         trajectory_nodes = pathplanner.run()
 
         self.tracker.robot_list[-1].trajectory = trajectory_nodes
@@ -188,30 +192,69 @@ class MainWindow(QtWidgets.QMainWindow):
        
 
 
-    def apply_algorithm(self):
-        if self.ui.algorithbutton.isChecked():
-            self.ui.algorithbutton.setText("Stop")
-            self.algorithm_status = True
+    def apply_static_func(self):
+        if self.ui.apply_static_button.isChecked():
+            self.ui.apply_static_button.setText("Stop")
+            self.static_algorithm_status = True
             self.algorithm = control_algorithm()
 
         
         else:
-            self.ui.algorithbutton.setText("Apply Algorithm")
-            self.algorithm_status = False
+            self.ui.apply_static_button.setText("Apply Static")
+            self.static_algorithm_status = False
+    
+
+    def apply_dynamic_func(self):
+        pass
 
 
 
     def update_image(self, frame, robot_list):
         """Updates the image_label with a new opencv image"""
 
-        #insert algorithm below
-        if self.algorithm_status == True:
+        #static algoruthm 
+        if self.static_algorithm_status == True:
 
             frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list, frame)
             
             self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
         else:
             self.arduino.send(0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+        #dynamic algorithm
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         #DEFINE CURRENT ROBOT PARAMS TO A LIST

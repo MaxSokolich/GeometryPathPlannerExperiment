@@ -238,25 +238,6 @@
        <bool>true</bool>
       </property>
      </widget>
-     <widget class="QLabel" name="framelabel">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>120</y>
-        <width>121</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>300</width>
-        <height>25</height>
-       </size>
-      </property>
-      <property name="text">
-       <string>Frame: </string>
-      </property>
-     </widget>
      <widget class="QPushButton" name="trackbutton">
       <property name="geometry">
        <rect>
@@ -397,12 +378,12 @@ QPushButton {
        <number>10</number>
       </property>
      </widget>
-     <widget class="QPushButton" name="algorithbutton">
+     <widget class="QPushButton" name="apply_static_button">
       <property name="geometry">
        <rect>
-        <x>70</x>
-        <y>85</y>
-        <width>161</width>
+        <x>10</x>
+        <y>100</y>
+        <width>141</width>
         <height>31</height>
        </rect>
       </property>
@@ -443,7 +424,7 @@ QPushButton {
             }</string>
       </property>
       <property name="text">
-       <string>Apply Algorithm</string>
+       <string>Apply Static</string>
       </property>
       <property name="checkable">
        <bool>true</bool>
@@ -452,9 +433,9 @@ QPushButton {
      <widget class="QPushButton" name="generatepathbutton">
       <property name="geometry">
        <rect>
-        <x>50</x>
-        <y>45</y>
-        <width>201</width>
+        <x>10</x>
+        <y>60</y>
+        <width>141</width>
         <height>31</height>
        </rect>
       </property>
@@ -506,7 +487,7 @@ QPushButton {
        <rect>
         <x>190</x>
         <y>140</y>
-        <width>101</width>
+        <width>111</width>
         <height>31</height>
        </rect>
       </property>
@@ -546,6 +527,96 @@ QPushButton {
       </property>
       <property name="checkable">
        <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="numobstaclelabel_2">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>35</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Static</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="numobstaclelabel_3">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>40</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>25</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Dynamic</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="apply_dynamic_button">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>80</y>
+        <width>141</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="cursor">
+       <cursorShape>ArrowCursor</cursorShape>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+                color: rgb(255, 255, 255);
+                background-color: rgb(0, 0, 255);
+                border-style: outset;
+                border-width: 3px;
+                border-radius: 10px;
+                border-color: rgb(0, 0, 255);
+                min-width: 1em;
+                padding: 2px;
+			  font: bold 15px;
+            }
+      
+            QPushButton:checked {
+                color: rgb(255, 255, 255);
+                background-color: rgb(255, 0, 0);
+                border-style: inset;
+                border-width: 3px;
+                border-radius: 10px;
+                border-color: rgb(255, 0, 0);
+                font: bold 25px;
+                min-width: 1em;
+               
+            }
+            QPushButton:hover {
+                background-color: rgb(100, 100, 100);
+                color: rgb(255, 255, 255);
+                border-color: rgb(0, 255, 0);
+                padding-left: 5px;
+                padding-top: 5px;
+            }</string>
+      </property>
+      <property name="text">
+       <string>Apply Dynamic</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>
@@ -1567,7 +1638,7 @@ color: rgb(0,255,0);</string>
      </property>
      <property name="minimumSize">
       <size>
-       <width>21</width>
+       <width>25</width>
        <height>0</height>
       </size>
      </property>
