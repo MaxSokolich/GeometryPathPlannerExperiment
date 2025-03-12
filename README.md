@@ -1,4 +1,4 @@
-This is a repo containing the microrobotic control user interface for a novel geometry based path planning obstacle avoidance algorithm.
+This is a repo containing the microrobotic control user interface for a novel geometry based path planning obstacle avoidance algorithm. Algorithm developed by Yanda Yang.
 
 
 
