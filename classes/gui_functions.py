@@ -83,7 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif "Windows" in platform.platform():
             self.tbprint("Detected OS:  Windows")
-            PORT = "COM4"
+            PORT = "COM3"
         else:
             self.tbprint("undetected operating system")
             PORT = None
