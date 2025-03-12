@@ -21,12 +21,8 @@ excel_path = "/Users/yanda/Downloads/frame_data11.xlsx"
 records = []
 frame_index = 0
 
-def run_dynamic(mask, start, end):
-    image = mask
+def run_dynamic(mask, frame, start, end):
     
-    
-    
-    #image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
 
     SP_x, SP_y = start[0], start[1]
@@ -34,9 +30,6 @@ def run_dynamic(mask, start, end):
 
 
 
-    #ret, image = cap.read()
-    #if not ret:
-    #    break
 
     #image_path = ‘’
     alpha = 6
@@ -51,31 +44,20 @@ def run_dynamic(mask, start, end):
 
     # draw the path
     #image = cv2.imread(image_path)
-    image_height, image_width = image.shape[:2]
+    image_height, image_width = mask.shape[:2]
 
-    # Convert image from BGR to HSV
-    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
 
     # Convert image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    #gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Threshold for color
-    _, threshold_white = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
-    red_lower1 = np.array([0, 120, 70])
-    red_upper1 = np.array([10, 255, 255])
-    red_lower2 = np.array([170, 120, 70])
-    red_upper2 = np.array([180, 255, 255])
-    yellow_lower = np.array([20, 100, 100])
-    yellow_upper = np.array([30, 255, 255])
+    _, threshold_white = cv2.threshold(mask, 240, 255, cv2.THRESH_BINARY)
+
 
     # Detect color
     contours_white, _ = cv2.findContours(threshold_white, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    mask_red1 = cv2.inRange(hsv, red_lower1, red_upper1)
-    mask_red2 = cv2.inRange(hsv, red_lower2, red_upper2)
-    mask_red = cv2.bitwise_or(mask_red1, mask_red2)
-    contours_red, _ = cv2.findContours(mask_red, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    mask_yellow = cv2.inRange(hsv, yellow_lower, yellow_upper)
-    contours_yellow, _ = cv2.findContours(mask_yellow, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
 
     # Center of area
     centers_radius_white = []
@@ -117,7 +99,7 @@ def run_dynamic(mask, start, end):
         # 对每个子区域进行处理
         for (x_new, y_new, w_new, h_new) in bboxes:
             # 绘制子区域矩形
-            cv2.rectangle(image, (x_new, y_new), (x_new + w_new, y_new + h_new), (0, 0, 255), 2)
+            #cv2.rectangle(frame, (x_new, y_new), (x_new + w_new, y_new + h_new), (0, 0, 255), 2)
             
             # 计算子区域中心（原始坐标系：左上角为原点）
             center_x = x_new + w_new / 2
@@ -132,23 +114,7 @@ def run_dynamic(mask, start, end):
             centers_radius_white.append(((center_x, center_y), radius, (x_new, y_new, w_new, h_new)))
             all_bboxes.append((x_new, y_new, w_new, h_new))
 
-    for contour in contours_red:
-        x, y, w, h = cv2.boundingRect(contour)
-        #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)
-        
-        center_x = x + w / 2
-        center_y = (y + h / 2)
-        
-        centers_red.append((center_x, center_y))
-
-    for contour in contours_yellow:
-        x, y, w, h = cv2.boundingRect(contour)
-        #cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 255), 2)
-
-        center_x = x + w / 2
-        center_y = (y + h / 2)
-        
-        centers_yellow.append((center_x, center_y))
+    
 
     # 初始参数设置
     #SP_x, SP_y = centers_red[0][0], centers_red[0][1]
@@ -161,12 +127,12 @@ def run_dynamic(mask, start, end):
 
 
     
-    def run_entire_code(SP_ini, EP_ini, img):
+    def run_entire_code(SP_ini, EP_ini, mask, frame):
 
         SP_x, SP_y = SP_ini[0], SP_ini[1]
         EP_x, EP_y = EP_ini[0], EP_ini[1]
 
-        image = img.copy()
+       
 
         p_cx = [point[0][0] for point in centers_radius_white]
         p_cy = [point[0][1] for point in centers_radius_white]
@@ -198,7 +164,7 @@ def run_dynamic(mask, start, end):
 
             return img
 
-        def draw_line_as_points(image, point1, point2, image_height, color=(255, 0, 255), thickness=10):
+        def draw_line_as_points(frame, point1, point2, image_height, color=(255, 0, 255), thickness=10):
             """Draw a line as a series of points on the image."""
             x1, y1 = point1
             x2, y2 = point2
@@ -209,7 +175,7 @@ def run_dynamic(mask, start, end):
             y_points = np.linspace(y1, y2, num=int(num_points/30), dtype=int)
 
             for x, y in zip(x_points, y_points):
-                cv2.circle(image, (x, y), thickness, color, -1)
+                cv2.circle(frame, (x, y), thickness, color, -1)
 
         def intersection_points(point1, slopes, point2, k):
             x1, y1 = point1
@@ -350,22 +316,7 @@ def run_dynamic(mask, start, end):
                     return func(*func_args)
             return B  # One or zero intersections, return B point
 
-        # draw same length line
-        def draw_clipped_lines(image, start_point, end_points, clip_length, color, thickness):
-            new_end_points = []
-
-            for end_point in end_points:
-                dx = end_point[0] - start_point[0]
-                dy = end_point[1] - start_point[1]
-                length = np.sqrt(dx**2 + dy**2)
-                scale = clip_length / length if length > 0 else 0
-                new_end_x = int(start_point[0] + scale * dx)
-                new_end_y = int(start_point[1] + scale * dy)
-                new_end_point = (new_end_x, new_end_y)
-                cv2.line(image, start_point, new_end_point, color, thickness)
-                new_end_points.append(new_end_point)
-
-            return new_end_points
+  
 
         # find next closest points
         def closest_two_points(origin, points, R_c, intersections):
@@ -610,16 +561,16 @@ def run_dynamic(mask, start, end):
                         far_pair = (points[i], points[j])
             return far_pair
 
-        def draw_transparent_triangle(image, vertices, color, alpha):
+        def draw_transparent_triangle(frame, vertices, color, alpha):
             """
             在 image 上绘制填充三角形，vertices 为三角形顶点列表（格式 [(x,y), ...]），
             color 为 BGR 颜色，alpha 为透明度（0～1）。
             """
-            overlay = image.copy()
+            overlay = frame.copy()
             pts = np.array(vertices, np.int32)
             pts = pts.reshape((-1, 1, 2))
             cv2.fillPoly(overlay, [pts], color)
-            cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
+            cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
 
         # remove far obstacles
         preprocess_result = pre_process(SP_x, SP_y, EP_x, EP_y, p_cx, p_cy, R_c, alpha)
@@ -629,7 +580,7 @@ def run_dynamic(mask, start, end):
         
         intersections, intercepts, p_c, R_c, m0, mp = preprocess_result
 
-        #image = img.copy()
+       
 
         # pack intersection coordinates and related data into a list of tuples
         packed_data = list(zip(intersections, intercepts, p_c, R_c))
@@ -655,10 +606,10 @@ def run_dynamic(mask, start, end):
         # selected obstacles' radius including hyperparameter
         updated_R_c = [r + d for r, d in zip(R_c_dyn, deltas)]
         for (x, y), radius in zip(sorted_p_c, R_c_dyn):
-            cv2.circle(image, (int(x), int(y)), int(radius), (0, 255, 0), 3)
+            cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 0), 3)
         # circle with hyperparameter
         for (x, y), radius in zip(sorted_p_c, updated_R_c):
-            draw_dashed_circle(image, (int(x), int(y)), int(radius), (0, 255, 0), 3, 50)
+            draw_dashed_circle(frame, (int(x), int(y)), int(radius), (0, 255, 0), 3, 50)
 
         # predefined
         k1 = (EP_y - SP_y) / (EP_x - SP_x)
@@ -708,13 +659,13 @@ def run_dynamic(mask, start, end):
             # draw path
             if waypoint_next is None:
                 break
-            draw_line_as_points(image, waypoint_current, waypoint_next, image_height)
+            draw_line_as_points(frame, waypoint_current, waypoint_next, image_height)
 
             waypoints.append(waypoint_next)  # 添加新的waypoint到列表
 
             if len(intersections) == 2:
                 waypoint_final = [EP_x, EP_y]
-                draw_line_as_points(image, waypoint_next, waypoint_final, image_height)
+                draw_line_as_points(frame, waypoint_next, waypoint_final, image_height)
                 waypoints.append(waypoint_final)  # 添加最终的waypoint
                 break  # 如果达到了终点，可以退出循环
 
@@ -741,7 +692,7 @@ def run_dynamic(mask, start, end):
             
             # 在 image_test 上用蓝色透明填充该三角区域，蓝色 BGR=(255, 0, 0)，透明度 0.5
             if triangle:
-                draw_transparent_triangle(image, triangle_vertices, (255, 255, 0), 0.3)
+                draw_transparent_triangle(frame, triangle_vertices, (255, 255, 0), 0.3)
 
         distances = np.linalg.norm(np.diff(waypoints, axis=0), axis=1)
 
@@ -750,24 +701,24 @@ def run_dynamic(mask, start, end):
 
         if debug:
             for (x,y) in waypoints:
-                cv2.circle(image, (int(x), int(y)), radius=20, color=(255, 255, 0), thickness=-1)
+                cv2.circle(frame, (int(x), int(y)), radius=20, color=(255, 255, 0), thickness=-1)
 
             # selected obstacles' center
             for (pcx, pcy) in p_c:
-                cv2.circle(image, (int(pcx), int(pcy)), radius=10, color=(255, 0, 0), thickness=-1)
+                cv2.circle(frame, (int(pcx), int(pcy)), radius=10, color=(255, 0, 0), thickness=-1)
 
             # draw intersection point
             for(x0,y0) in sorted_intersections:
-                cv2.circle(image, (int(x0), int(y0)), radius=10, color=(255, 0, 0), thickness=-1)
+                cv2.circle(frame, (int(x0), int(y0)), radius=10, color=(255, 0, 0), thickness=-1)
 
             # selected obstacles' perpendicular lines
             for (pc, intersection) in zip(sorted_p_c, sorted_intersections):
                 x1, y1 = int(pc[0]), int(pc[1])
                 x2, y2 = int(intersection[0]), int(intersection[1])
-                draw_dashed_line(image, (x1, y1), (x2, y2), (255, 0, 0), 5, 25)
+                draw_dashed_line(frame, (x1, y1), (x2, y2), (255, 0, 0), 5, 25)
 
             # optimal path
-            draw_dashed_line(image, (int(SP_x), int(SP_y)), (int(EP_x), int(EP_y)), (0, 128, 255), 5, 100)
+            draw_dashed_line(frame, (int(SP_x), int(SP_y)), (int(EP_x), int(EP_y)), (0, 128, 255), 5, 100)
 
         #print(f"total length: {total_length:.2f}")
 
@@ -783,11 +734,11 @@ def run_dynamic(mask, start, end):
             )'''
             
 
-        return image, total_length, obstacle_amount, waypoints
+        return frame, total_length, obstacle_amount, waypoints
     
     
     # 对每一帧进行处理
-    processed_frame, total_length, obstacle_amount, waypoints = run_entire_code(SP_ini, EP_ini, image)
+    processed_frame, total_length, obstacle_amount, waypoints = run_entire_code(SP_ini, EP_ini, mask, frame)
 
     return processed_frame, waypoints, total_length, obstacle_amount
 

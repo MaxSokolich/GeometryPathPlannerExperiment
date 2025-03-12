@@ -6,8 +6,9 @@ from classes.gui_functions import MainWindow
 
 
 # add dynamic saftey alpha radius box
-# double check the mask/frame input to the algorithms
 # figure out weird crashes
+# address stuttering effect
+# add closed loop
 
  
 

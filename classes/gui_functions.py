@@ -217,7 +217,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-    def update_image(self, frame, robot_list):
+    def update_image(self, frame, mask, robot_list):
         """Updates the image_label with a new opencv image"""
 
         #static algoruthm 
@@ -237,7 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
             end = (robot_list[-1].trajectory[-1][0], robot_list[-1].trajectory[-1][1])
             
             
-            frame, waypoints, self.total_length, self.obstacle_amount = run_dynamic(frame, start, end)
+            frame, waypoints, self.total_length, self.obstacle_amount = run_dynamic(mask, frame, start, end)
 
             #pts = np.array(waypoints, np.int32)
             #cv2.polylines(frame, [pts], False, (0, 0, 255), 5)
@@ -252,7 +252,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-        #DEFINE CURRENT ROBOT PARAMS TO A LIST
+        """#DEFINE CURRENT ROBOT PARAMS TO A LIST
         if len(robot_list) > 0:
             self.robots = []
             for bot in robot_list:
@@ -278,7 +278,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         #camrea stuff
-        frame = self.handle_zoom(frame)
+        frame = self.handle_zoom(frame)"""
     
         self.currentframe = frame
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -512,10 +512,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def setFile(self):
         if self.videopath == 0:
             try:
-                self.cap  = cv2.VideoCapture(0) 
+                #self.cap  = cv2.VideoCapture(0) 
                 
-                #self.cap  = EasyPySpin.VideoCapture(0)
-                #self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
+                self.cap  = EasyPySpin.VideoCapture(0)
+                self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
             except Exception:
