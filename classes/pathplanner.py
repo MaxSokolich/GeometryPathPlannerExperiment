@@ -10,7 +10,7 @@ class geo_algorithm:
 
         self.image = image
         self.safety_radius = safety_radius
-        self.alpha = alpha_geo
+        self.alpha = 1
         
 
         self.deltas = deltas # hyperparameter

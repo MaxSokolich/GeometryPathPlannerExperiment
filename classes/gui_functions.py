@@ -35,7 +35,7 @@ from classes.robot_class import Robot
 from classes.record_class import RecordThread
 from classes.algorithm_class import control_algorithm
 from classes.pathplanner import geo_algorithm
-from classes.APG_dynamic import run_dynamic
+from classes.APG_dynamic import run_dynamic_pathplanner
 
 
 
@@ -186,7 +186,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
         pathplanner = geo_algorithm(image, start_point, end_point, alpha_geo, safety_radius, deltas)
         trajectory_nodes = pathplanner.run()
+        print("1", trajectory_nodes)
         self.tracker.robot_list[-1].trajectory = trajectory_nodes
+        print("2", self.tracker.robot_list[-1])
   
 
        
@@ -207,6 +209,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.apply_dynamic_button.isChecked():
             self.ui.apply_dynamic_button.setText("Stop")
             self.dynamic_algorithm_status = True
+            self.algorithm = control_algorithm()
         else:
             self.ui.apply_dynamic_button.setText("Apply Dynamic")
             self.dynamic_algorithm_status = False
@@ -222,28 +225,44 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #static algoruthm 
         if self.static_algorithm_status == True:
-            frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run(robot_list, frame)
-            
-            self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+            if len(robot_list) >0: #a bot is present
+                frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run_static(frame, robot_list)
+                self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
         
 
 
         #dynamic algorithm
         elif self.dynamic_algorithm_status == True:
             
-            start = (robot_list[-1].position_list[-1][0], robot_list[-1].position_list[-1][1])
-            
-            
-            end = (robot_list[-1].trajectory[-1][0], robot_list[-1].trajectory[-1][1])
-            
-            
-            frame, waypoints, self.total_length, self.obstacle_amount = run_dynamic(mask, frame, start, end)
+            if len(robot_list) >0: #a bot is present
+                #remove the bot from the mask to avoid the algorithm mistaking the bot from an obstacle
+                try:
+                    for bot in self.tracker.robot_list:    
+                        x,y,w,h = robot_list[-1].cropped_frame[-1]
+                        blank = np.zeros((w, h), dtype=np.uint8) 
+                        mask[y:y+w , x:x+h] = blank 
+                except Exception:
+                    pass
+                
 
-            #pts = np.array(waypoints, np.int32)
-            #cv2.polylines(frame, [pts], False, (0, 0, 255), 5)
-        
-        
-        
+                #define start and end points
+                current_robot_position = (robot_list[-1].position_list[-1][0], robot_list[-1].position_list[-1][1])  #microrobots currnt position
+                end = (robot_list[-1].trajectory[-1][0], robot_list[-1].trajectory[-1][1])  #target position
+                
+                #define algorithm parameters
+                alpha_geo = self.ui.alphabox.value() 
+                safety_radius = self.ui.safetyradiusbox.value()
+
+                #define dynamic path
+                frame, trajectory, self.total_length, self.obstacle_amount = run_dynamic_pathplanner(mask, frame, current_robot_position, end, alpha_geo, safety_radius)
+
+                #output actuation actions
+                frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run_dynamic(frame, current_robot_position, trajectory)
+                self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
+
+                
+
+
         else:
             self.arduino.send(0, 0, 0, 0, 0, 0, 0, 0, 0)
 
@@ -447,7 +466,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     
 
-    def update_croppedimage(self, frame, recoreded_frame):
+    def update_croppedimage(self, frame, recorded_frame):
         """Updates the cropped image_label with a new cropped opencv image"""
         
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -461,7 +480,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #recored the robots suroundings
         if self.croppedresult is not None:
-            self.croppedresult.write(recoreded_frame)
+            self.croppedresult.write(recorded_frame)
 
     
 
@@ -513,25 +532,35 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.videopath == 0:
             try:
                 #self.cap  = cv2.VideoCapture(0) 
+                self.cap = EasyPySpin.VideoCapture(0)
+                self.video_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                self.video_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                self.videofps = int(self.cap.get(cv2.CAP_PROP_FPS))
+                self.aspectratio = (self.video_width / self.video_height)
                 
-                self.cap  = EasyPySpin.VideoCapture(0)
-                self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
+                #self.cap.set(cv2.CAP_PROP_AUTO_WB, True)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
                 #self.cap.set(cv2.CAP_PROP_FPS, 30)
             except Exception:
                 self.cap  = cv2.VideoCapture(0) 
                 self.tbprint("No EasyPySpin Camera Available")
+                self.video_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                self.video_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                self.videofps = int(self.cap.get(cv2.CAP_PROP_FPS))
+                self.aspectratio = (self.video_width / self.video_height)
          
         else:
             self.cap  = cv2.VideoCapture(self.videopath)
+            self.video_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.video_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.videofps = int(self.cap.get(cv2.CAP_PROP_FPS))
+            self.aspectratio = (self.video_width / self.video_height)
          
-        
-        self.video_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.video_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.videofps = int(self.cap.get(cv2.CAP_PROP_FPS))
-        self.tbprint("Width: {}  --  Height: {}  --  Fps: {}".format(self.video_width,self.video_height,self.videofps))
 
-        self.aspectratio = (self.video_width / self.video_height)
+        
+     
+        self.tbprint("Width: {}  --  Height: {}  --  Fps: {}".format(self.video_width,self.video_height,self.videofps))
+        
 
         self.resize_widgets()        
 
@@ -547,10 +576,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.frameslider.setMaximum(self.totalnumframes)
             self.ui.frameslider.show()
         
-        #if self.ui.recordbutton.isChecked():
-            #self.recordfunction()
-
-        #if not self.ui.trackbutton.isChecked(): #clear the pixmap
         self.ui.VideoFeedLabel.setPixmap(QtGui.QPixmap())
         
 

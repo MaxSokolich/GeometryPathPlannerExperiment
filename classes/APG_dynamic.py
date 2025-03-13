@@ -20,11 +20,14 @@ excel_path = "/Users/yanda/Downloads/frame_data11.xlsx"
 
 records = []
 frame_index = 0
+trajectory_memory = []
 
-def run_dynamic(mask, frame, start, end):
+
+def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     
 
-
+    trajectory = []
+    
     SP_x, SP_y = start[0], start[1]
     EP_x, EP_y = end[0], end[1]
 
@@ -32,7 +35,9 @@ def run_dynamic(mask, frame, start, end):
 
 
     #image_path = ‘’
-    alpha = 6
+    
+    safety_radius = safety_radius  # .1 > 20
+    alpha = alpha                  # 1 - 20
     diff_co = 0.03
     scale = 0.18  #um/pix
     MR_speed = 1000  #um/s
@@ -107,7 +112,7 @@ def run_dynamic(mask, frame, start, end):
             # 如果需要以左下角为原点，则转换 y 坐标
             center_y = center_y_original
             
-            radius = int(0.5 * np.sqrt(w_new**2 + h_new**2))
+            radius = int(safety_radius * np.sqrt(w_new**2 + h_new**2))
 
             #cv2.circle(image, (int(center_x), int(center_y)), radius, (0, 255, 0), 3)
             
@@ -176,6 +181,16 @@ def run_dynamic(mask, frame, start, end):
 
             for x, y in zip(x_points, y_points):
                 cv2.circle(frame, (x, y), thickness, color, -1)
+                trajectory.append([x,y])  #add points to a trajectory list
+            
+            
+            
+            
+            
+            trajectory_memory.append(trajectory)  #add entire trajectory list to a memory list to record all previous trajectories
+            if len(trajectory_memory) > 3:
+                trajectory_memory.pop(0)
+
 
         def intersection_points(point1, slopes, point2, k):
             x1, y1 = point1
@@ -640,12 +655,14 @@ def run_dynamic(mask, frame, start, end):
                 result = find_m(waypoint_current[0], waypoint_current[1], closest_points[0][0], closest_points[0][1], closest_rc[0])
                 if result is None:
                     print("r/d exceed")
+                    #trajectory = trajectory_memory[-1]
                     break
             else:
                 result1 = find_m(waypoint_current[0], waypoint_current[1], closest_points[0][0], closest_points[0][1], closest_rc[0])
                 result2 = find_m(waypoint_current[0], waypoint_current[1], closest_points[1][0], closest_points[1][1], closest_rc[1])
                 if result1 is None or result2 is None:
                     print("r/d exceed")
+                    #trajectory = trajectory_memory[-1]
                     break
                 result = result1 + result2
 
@@ -733,14 +750,14 @@ def run_dynamic(mask, frame, start, end):
                 4                        # 线条粗细
             )'''
             
-
-        return frame, total_length, obstacle_amount, waypoints
+   
+        return frame, total_length, obstacle_amount, trajectory
     
     
     # 对每一帧进行处理
-    processed_frame, total_length, obstacle_amount, waypoints = run_entire_code(SP_ini, EP_ini, mask, frame)
+    processed_frame, total_length, obstacle_amount, trajectory = run_entire_code(SP_ini, EP_ini, mask, frame)
 
-    return processed_frame, waypoints, total_length, obstacle_amount
+    return processed_frame, trajectory, total_length, obstacle_amount
 
     """# 显示处理后的帧
     cv2.imshow('geo', processed_frame)
