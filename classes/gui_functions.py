@@ -257,7 +257,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 frame, trajectory, self.total_length, self.obstacle_amount = run_dynamic_pathplanner(mask, frame, current_robot_position, end, alpha_geo, safety_radius)
 
                 #output actuation actions
-                frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run_dynamic(frame, current_robot_position, trajectory)
+                #if len(trajectory)==0:
+                #    trajectory.append(end)
+
+                frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run_dynamic(frame, current_robot_position, trajectory, end)
                 self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
 
                 
@@ -271,7 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-        """#DEFINE CURRENT ROBOT PARAMS TO A LIST
+        #DEFINE CURRENT ROBOT PARAMS TO A LIST
         if len(robot_list) > 0:
             self.robots = []
             for bot in robot_list:
@@ -297,7 +300,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         #camrea stuff
-        frame = self.handle_zoom(frame)"""
+        frame = self.handle_zoom(frame)
     
         self.currentframe = frame
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

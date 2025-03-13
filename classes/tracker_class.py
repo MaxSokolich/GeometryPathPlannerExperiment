@@ -249,6 +249,9 @@ class VideoThread(QThread):
                 cv2.rectangle(display_frame, (x1, y1), (x1 + w, y1 + h), botcolor, 4)
                 cv2.putText(display_frame,str(botnum+1),(x1 + w,y1 + h),cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, thickness=4,color = (255, 255, 255))
                 
+
+                #if len(bot.position_list) > 50:
+                #    bot.position_list.pop(0)
                 pts = np.array(bot.position_list, np.int32)
                 cv2.polylines(display_frame, [pts], False, botcolor, 4)
 

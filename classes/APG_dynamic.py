@@ -182,14 +182,15 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             for x, y in zip(x_points, y_points):
                 cv2.circle(frame, (x, y), thickness, color, -1)
                 trajectory.append([x,y])  #add points to a trajectory list
+            #print("this should be called all the time")
             
             
             
             
             
-            trajectory_memory.append(trajectory)  #add entire trajectory list to a memory list to record all previous trajectories
-            if len(trajectory_memory) > 3:
-                trajectory_memory.pop(0)
+            #trajectory_memory.append(trajectory)  #add entire trajectory list to a memory list to record all previous trajectories
+            #if len(trajectory_memory) > 3:
+            #    trajectory_memory.pop(0)
 
 
         def intersection_points(point1, slopes, point2, k):
@@ -612,7 +613,9 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
         # dynamic safety radius
         sorted_intersections_np = np.array(sorted_intersections)
         sorted_R_c = np.array(sorted_R_c) 
-        d = np.sqrt((sorted_intersections_np[:, 0] - SP_x) ** 2 + (sorted_intersections_np[:, 1] - SP_y) ** 2) * scale
+        #d = np.sqrt((sorted_intersections_np[:, 0] - SP_x) ** 2 + (sorted_intersections_np[:, 1] - SP_y) ** 2) * scale
+        d = 1
+        
         R_c_dyn = (np.sqrt(4 * diff_co * d / MR_speed) + sorted_R_c * scale + MR_radius) / scale
 
         real_r = [scale * r for r in R_c_dyn]
@@ -639,6 +642,9 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
         waypoints = []
         waypoints.append(waypoint0)
         total_length = 0
+
+        if n == 0:
+            draw_line_as_points(frame, waypoint0, EP_ini, image_height)
 
         for i in range(n):
             waypoint_current = waypoints[-1]  # 获取当前的waypoint
@@ -679,7 +685,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             draw_line_as_points(frame, waypoint_current, waypoint_next, image_height)
 
             waypoints.append(waypoint_next)  # 添加新的waypoint到列表
-
+            #print("intersections = ",intersections)
             if len(intersections) == 2:
                 waypoint_final = [EP_x, EP_y]
                 draw_line_as_points(frame, waypoint_next, waypoint_final, image_height)
@@ -750,7 +756,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
                 4                        # 线条粗细
             )'''
             
-   
+        #print("trajectory = ", trajectory)
         return frame, total_length, obstacle_amount, trajectory
     
     

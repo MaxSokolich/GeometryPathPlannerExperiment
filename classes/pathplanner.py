@@ -10,7 +10,7 @@ class geo_algorithm:
 
         self.image = image
         self.safety_radius = safety_radius
-        self.alpha = 1
+        self.alpha = alpha_geo
         
 
         self.deltas = deltas # hyperparameter
@@ -513,7 +513,7 @@ class geo_algorithm:
                 center_x = x_new + w_new / 2
                 center_y_original = y_new + h_new / 2
                 # 如果需要以左下角为原点，则转换 y 坐标
-                center_y = image_height - center_y_original
+                center_y = center_y_original
                 
                 radius = int(self.safety_radius * np.sqrt(w_new**2 + h_new**2))
 
@@ -625,9 +625,9 @@ class geo_algorithm:
                 continue
             
             # 用 far_pair 中的两个交点与 waypoint_current 构成三角形
-            triangle_vertices = [(waypoint_current[0], image_height - waypoint_current[1]), 
-                                (far_pair[0][0], image_height - far_pair[0][1]), 
-                                (far_pair[1][0], image_height - far_pair[1][1])]
+            triangle_vertices = [(waypoint_current[0], waypoint_current[1]), 
+                                (far_pair[0][0], far_pair[0][1]), 
+                                (far_pair[1][0], far_pair[1][1])]
             
             # 在 image_test 上用蓝色透明填充该三角区域，蓝色 BGR=(255, 0, 0)，透明度 0.5
 
