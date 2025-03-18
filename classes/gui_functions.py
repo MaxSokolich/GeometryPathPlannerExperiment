@@ -35,7 +35,7 @@ from classes.robot_class import Robot
 from classes.record_class import RecordThread
 from classes.algorithm_class import control_algorithm
 from classes.pathplanner import geo_algorithm
-from classes.APG_dynamic import run_dynamic_pathplanner
+from classes.APG_dynamic_old import run_dynamic_pathplanner
 
 
 
