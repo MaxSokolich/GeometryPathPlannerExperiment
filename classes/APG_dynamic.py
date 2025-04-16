@@ -4,23 +4,21 @@ import copy
 import time
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 start_time = time.time()
 
-cap = cv2.VideoCapture('/Users/yanda/Downloads/output_video8.mp4')
-
+# video input and output
+cap = cv2.VideoCapture('/Users/yanda/Downloads/Plan_Planning/no_collision3.mp4')
 fps = cap.get(cv2.CAP_PROP_FPS)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 frame_size = (width, height)
-
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter("/Users/yanda/Downloads/output_video_path8.mp4", fourcc, fps, frame_size)
-excel_path = "/Users/yanda/Downloads/frame_data8.xlsx"
-
+out = cv2.VideoWriter("/Users/yanda/Downloads/test_result.mp4", fourcc, fps, frame_size)
+excel_path = "/Users/yanda/Downloads/test_result.xlsx"
 records = []
 frame_index = 0
-trajectory_memory = []
 
 def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     
@@ -29,17 +27,34 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     SP_x, SP_y = start[0], start[1]
     EP_x, EP_y = end[0], end[1]
 
+    # static para
+    deltas = [0] * 100
+    #save_path = 'png'
+    debug = False
+    triangle = False
+    #initial_interval = 50
+    #step = 10
+
+    # dynamic para
+    grid_width = 500
+    arrival_threshold = 500
+    MR_size = 10
+
+    # dynamic initialization
+    tracking = []
+    all_path = []
+    colormap = plt.get_cmap('plasma')
+    target_point = []
+    initialized = False
+    reinitialize = True
+    target_idx = 0 
+    override_active = False
+    trajectory_memory = []
+
     #image_path = ‘’
     
     safety_radius = safety_radius  # .1 > 20
     alpha = alpha                  # 1 - 20
-    deltas = [0] * 100
-    save_path = '/Users/yanda/Downloads/click_test_result.png'
-    debug = False
-    triangle = False
-    error = 0
-    initial_interval = 100
-    step = 10
 
     # draw the path
     #image = cv2.imread(image_path)
@@ -51,13 +66,56 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     # Threshold for color
     _, threshold_white = cv2.threshold(mask, 240, 255, cv2.THRESH_BINARY)
 
-
     # Detect color
     contours_white, _ = cv2.findContours(threshold_white, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Center of area
     centers_radius_white = []
     all_bboxes = []
+    sub_contours_color = []
+
+    '''# contour mesh 遍历每个识别到的轮廓
+    for cnt in contours_white:
+        # 1. 获取当前轮廓的外接矩形
+        x, y, w, h = cv2.boundingRect(cnt)
+        
+        # 2. 在边界框范围内创建一个二值掩模，并绘制当前轮廓（注意坐标偏移）
+        mask = np.zeros((h, w), dtype=np.uint8)
+        cnt_shifted = cnt - [x, y]
+        cv2.drawContours(mask, [cnt_shifted], -1, 255, thickness=cv2.FILLED)
+        
+        # 3. 对边界框区域按照网格划分
+        for i in range(0, w, grid_width):
+            for j in range(0, h, grid_width):
+                # 截取当前网格单元
+                cell = mask[j:j+grid_width, i:i+grid_width]
+                # 如果该区域存在轮廓部分（非零像素数大于0）
+                if cv2.countNonZero(cell) > 0:
+                    # 对当前网格单元进行轮廓提取
+                    sub_cnts, _ = cv2.findContours(cell, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    for sub in sub_cnts:
+                        # 调整子轮廓的坐标：先加上网格单元在局部图中的偏移，再加上边界框偏移
+                        sub = sub + [i, j]   # 网格单元内偏移
+                        sub = sub + [x, y]   # 边界框偏移
+                        sub_contours_color.append(sub)
+
+    for contour in sub_contours_color:
+        x, y, w, h = cv2.boundingRect(contour)
+        
+        # 绘制子区域矩形
+        #cv2.rectangle(image, (x, y), (x + w, y + h), (0, 0, 255), 3)
+        
+        # 计算子区域中心（原始坐标系：左上角为原点）
+        center_x = x + w / 2
+        center_y_original = y + h / 2
+        # 如果需要以左下角为原点，则转换 y 坐标
+        center_y = image_height - center_y_original
+        
+        radius = int(safety_radius * np.sqrt(w**2 + h**2))
+
+        #cv2.circle(image, (int(center_x), image_height - int(center_y)), radius, (0, 255, 0), 3)
+        
+        centers_radius_white.append(((center_x, center_y), radius, (x, y, w, h)))'''
 
     for contour in contours_white:
         x, y, w, h = cv2.boundingRect(contour)
@@ -86,26 +144,27 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
         
         # 对每个子区域进行处理
         for (x_new, y_new, w_new, h_new) in bboxes:
-            
+
             #cv2.rectangle(image, (x_new, y_new), (x_new + w_new, y_new + h_new), (0, 0, 255), 2)
-            
+
             # 计算子区域中心（左上角为原点，转换成左下角为原点）
             center_x = x_new + w_new * 0.5
             center_y = y_new + h_new * 0.5
             
             # 使用 math.hypot 替代 np.sqrt 进行半径计算
-            radius = int(safety_radius * math.hypot(w_new, h_new))
+            radius = int(safety_radius * math.hypot(w_new, h_new)) + MR_size
             
             centers_radius_white.append(((center_x, center_y), radius, (x_new, y_new, w_new, h_new)))
             all_bboxes.append((x_new, y_new, w_new, h_new))
 
     # 初始参数设置
-    #SP_x, SP_y = centers_red[0][0], centers_red[0][1]
     SP_ini = (SP_x, SP_y)
-    #EP_x, EP_y = centers_yellow[0][0], centers_yellow[0][1]
-    EP_ini = (EP_x, EP_y)
+    if not override_active:
+        EP_ini = (EP_x, EP_y)
 
-    def run_entire_code(SP_ini, EP_ini, mask, frame):
+    distances = (EP_x - SP_x)**2 + (EP_y - SP_y)**2
+
+    def run_entire_code(SP_ini, EP_ini, mask, frame, distances):
 
         SP_x, SP_y = SP_ini[0], SP_ini[1]
         EP_x, EP_y = EP_ini[0], EP_ini[1]
@@ -146,7 +205,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
 
             return img'''
 
-        def draw_line_as_points(image, point1, point2, image_height, draw, color=(255, 0, 255), thickness=10):
+        def draw_line_as_points(image, point1, point2, image_height, draw, color=(0, 191, 255), thickness=10):
             """Draw a line as a series of points on the image and return the list of coordinate tuples."""
             x1, y1 = point1
             x2, y2 = point2
@@ -513,12 +572,11 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
         # 辅助函数：判断一个点是否严格在任意圆内
         def in_any_circle(point, circles):
             x, y = point
-            for (center, rad) in circles:
+            for idx, (center, rad) in enumerate(circles):
                 cx, cy = center
-                # 使用平方距离比较
-                if (x - cx)**2 + (y - cy)**2 < rad**2 - error:
-                    return True
-            return False
+                if (x - cx)**2 + (y - cy)**2 < rad**2:
+                    return True, idx  # 返回 True 和圆的索引
+            return False, -1  # 没有落在任何圆内
 
         def adjust_waypoint(waypoint_current, waypoint_next, circles):
             """
@@ -643,7 +701,13 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             
             # 将 points 转换为 numpy 数组（形状 (N,2)）
             pts = np.array(points)
-            t_pts = np.dot(pts - SP_arr, line_vec) / line_len_sq
+            if pts.size == 0:
+                print("No points to process.")
+                t_pts = np.array([])  # So later code doesn't crash
+            else:
+                t_pts = np.dot(pts - SP_arr, line_vec) / line_len_sq
+
+
             mask = t_pts >= t_proj
             # 过滤后的点转换回列表
             filtered_points = pts[mask].tolist()
@@ -652,7 +716,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             
             return filtered_points, filtered_R_c, filtered_intersections
         
-        def move_away_from_line(waypoint_current, SP, EP, global_circles, initial_interval, step):
+        '''def move_away_from_line(waypoint_current, SP, EP, global_circles, initial_interval, step):
             """
             从 waypoint_current 出发，沿着远离直线（由 SP 和 EP 定义）的方向移动，
             移动的距离从 initial_interval 开始，每次增加 step，直到找到一个不在 global_circles 内的点，
@@ -701,7 +765,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
                 # 检查 new_point 是否在 global_circles 内（in_any_circle 接受元组）
                 if not in_any_circle(tuple(new_point), global_circles):
                     return tuple(new_point)
-                interval += step
+                interval += step'''
 
         # remove far obstacles
         preprocess_result = pre_process(SP_x, SP_y, EP_x, EP_y, p_cx, p_cy, R_c, alpha)
@@ -729,7 +793,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
 
         # 绘制障碍物（绘制原始半径；若需要用 updated_R_c 绘制虚线圆，可打开对应代码）
         for (x, y), radius in zip(sorted_p_c, sorted_R_c):
-            cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 0), 3)
+            cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 0), 2)
         '''
         # 绘制带超参数的虚线圆（调试用）
         for (x, y), radius in zip(sorted_p_c, updated_R_c):
@@ -737,6 +801,8 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
         '''
 
         # 预定义直线斜率（用于后续计算）
+        if EP_x == SP_x:
+            EP_x = EP_x + 1
         k1 = (EP_y - SP_y) / (EP_x - SP_x)
         k2 = -1 / k1
 
@@ -757,6 +823,8 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
 
         # 构造全局障碍信息列表，后续 in_any_circle 调用会使用
         global_circles = list(zip(sorted_p_c, updated_R_c))
+        dynamic_updated_R_c = [x for x in updated_R_c]
+        dynamic_global_circles = list(zip(sorted_p_c, dynamic_updated_R_c))
         # 初始化 far_pairs（后续可能用于求最远点对）
         far_pairs = []
 
@@ -822,7 +890,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             # 检查是否达到终点或交点数表明路径已闭合
             if len(intersections) == 2:
                 waypoint_final = [EP_x, EP_y]
-                # 计算当前航点到下一个航点之间的中间点序列（不绘制端点）
+                '''# 计算当前航点到下一个航点之间的中间点序列（不绘制端点）
                 midpoints = draw_line_as_points(frame, waypoint_current, waypoint_next, image_height, False)[1:-1]
                 # 添加中点（可选，确保列表中有至少一个点）
                 midpoints.append(((waypoint_current[0] + waypoint_next[0]) / 2, (waypoint_current[1] + waypoint_next[1]) / 2))
@@ -834,7 +902,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
                         waypoints = waypoints[:-2]
                         cv2.circle(frame, (int(waypoint_middle[0]), int(waypoint_middle[1])), 15, (0, 128, 255), -1)
                         waypoints.append(waypoint_middle)
-                        break
+                        break'''
                 waypoints.append(waypoint_final)
                 break
 
@@ -844,22 +912,23 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
 
             # 如果启用 triangle 模式，则进行额外的三角形构造与绘制
             if triangle:
-                intersection_points_x = []
-                for m in result:
-                    pt = compute_intersection_of_line_with_line_t(m, waypoint_current, waypoint_next, closest_points[0])
-                    if pt is not None:
-                        intersection_points_x.append(pt)
-                far_pair = select_farthest_pair(intersection_points_x)
-                if far_pair is None:
-                    print(f"第 {i+1} 次循环：无法选出最远的两个交点，跳过该次计算。")
-                    continue
-                triangle_vertices = [(waypoint_current[0], waypoint_current[1]),
-                                    (far_pair[0][0], far_pair[0][1]),
-                                    (far_pair[1][0], far_pair[1][1])]
-                far_pairs.extend(far_pair)
-                draw_transparent_triangle(frame, triangle_vertices, (255, 255, 0), 0.3)
+                if i == 0:
+                    intersection_points_x = []
+                    for m in result:
+                        pt = compute_intersection_of_line_with_line_t(m, waypoint_current, waypoint_next, closest_points[0])
+                        if pt is not None:
+                            intersection_points_x.append(pt)
+                    far_pair = select_farthest_pair(intersection_points_x)
+                    if far_pair is None:
+                        print(f"第 {i+1} 次循环：无法选出最远的两个交点，跳过该次计算。")
+                        continue
+                    triangle_vertices = [(waypoint_current[0], waypoint_current[1]),
+                                        (far_pair[0][0], far_pair[0][1]),
+                                        (far_pair[1][0], far_pair[1][1])]
+                    far_pairs.extend(far_pair)
+                    draw_transparent_triangle(frame, triangle_vertices, (219, 112, 147), 0.3)
 
-            # 计算当前段的中间点序列，再次检查其中是否有点落入障碍内
+            '''# 计算当前段的中间点序列，再次检查其中是否有点落入障碍内
             midpoints = draw_line_as_points(frame, waypoint_current, waypoint_next, image_height, False)[1:-1]
             midpoints.append(((waypoint_current[0] + waypoint_next[0]) / 2, (waypoint_current[1] + waypoint_next[1]) / 2))
             for midpoint in midpoints:
@@ -869,7 +938,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
                     waypoints = waypoints[:-2]
                     cv2.circle(frame, (int(waypoint_middle[0]), int(waypoint_middle[1])), 10, (0, 128, 255), -1)
                     waypoints.append(waypoint_middle)
-                    break
+                    break'''
 
             # 根据最新的 waypoint_next 更新障碍数据（利用投影过滤，同步更新列表）
             updated_points, updated_rc, updated_intersections = filter_sync_by_projection(updated_points, updated_rc, updated_intersections, 
@@ -880,10 +949,8 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             draw_line_as_points(frame, waypoints[i], waypoints[i+1], image_height, True)
 
         # 利用 NumPy 计算航点之间距离与总路径长度
-        waypoints_arr = np.array(waypoints)
-        distances = np.linalg.norm(np.diff(waypoints_arr, axis=0), axis=1)
-        total_length = np.sum(distances)
-        obstacle_amount = len(sorted_intersections)  
+        total_length = distances
+        obstacle_amount = 1
 
         if debug:
             for (x,y) in waypoints:
@@ -918,13 +985,50 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
                 (0, 0, 255),             # 颜色 (BGR)
                 4                        # 线条粗细
             )'''
-            
+        
+        # check microrobot's position is inside circle or not
+        check_position = False
+        collision_center = []
+        if SP_ini is not None:
+            robot_position = np.array(SP_ini)
+            decide_D, collision_index = in_any_circle(robot_position, dynamic_global_circles)
+            if len(dynamic_global_circles) > 0:
+                collision_center = dynamic_global_circles[collision_index][0]
+            if decide_D:
+                check_position = True
+                
         #print("trajectory = ", trajectory)
-        return frame, total_length, obstacle_amount, trajectory
+        return frame, total_length, obstacle_amount, trajectory, check_position, collision_center
     
     
     # 对每一帧进行处理
-    processed_frame, total_length, obstacle_amount, trajectory = run_entire_code(SP_ini, EP_ini, mask, frame)
+    processed_frame, total_length, obstacle_amount, trajectory, check_position, collision_center = run_entire_code(SP_ini, EP_ini, mask, frame, distances)
+
+    # mirror next waypoint when collision happens
+    if check_position == True and not initialized:
+        mirror_x = 2 * SP_ini[0] - collision_center[0]
+        mirror_y = 2 * SP_ini[1] - collision_center[1]
+        EP_ini = (mirror_x, mirror_y)
+        initialized = True
+        override_active = True
+        print("change target point")
+
+    da = SP_ini[0] - EP_ini[0]
+    db = SP_ini[1] - EP_ini[1]
+    threshold = da**2 + db**2
+
+    if threshold < arrival_threshold:
+        # 如果处于覆盖状态下，先取消覆盖，使得下一次循环继续使用列表中的目标
+        if override_active:
+            override_active = False
+            EP_ini = (EP_x, EP_y)
+        # 如果当前到达的是列表中的目标，就更新为下一目标
+        else:
+            # 这里直接更新EP_ini为新的列表目标，也可以等待下一次循环通过非覆盖分支更新
+            EP_ini = (EP_x, EP_y)
+        
+        reinitialize = True
+        initialized = False
 
     return processed_frame, trajectory, total_length, obstacle_amount
 

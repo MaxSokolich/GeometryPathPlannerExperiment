@@ -4,7 +4,7 @@ import cv2
 class control_algorithm:
     def __init__(self):
         self.node = 0
-        self.arrival_threshold = 10
+        self.arrival_threshold = 1
         
     def run_static(self, frame, robot_list):
         
@@ -125,7 +125,7 @@ class control_algorithm:
             Bz = 0 #disregard
             alpha = np.arctan2(-direction_vec[1], direction_vec[0])  - np.pi/2
             gamma = np.pi/2   #disregard
-            freq = 10    #CHANGE THIS EACH FRAME
+            freq = 5    #CHANGE THIS EACH FRAME
             psi = np.pi/2      #disregard
             gradient = 0 # #disregard
             acoustic_freq = 0  #disregard
@@ -134,7 +134,7 @@ class control_algorithm:
             targety = end[1]
             robotx = current_robot_position[0]
             roboty = current_robot_position[1]
-            print(targetx, robotx)
+            #print(targetx, robotx)
             direction_vec = [targetx - robotx, targety - roboty]
             error = np.sqrt(direction_vec[0] ** 2 + direction_vec[1] ** 2)
             if error < self.arrival_threshold:
@@ -153,7 +153,7 @@ class control_algorithm:
                 Bz = 0 #disregard
                 alpha = np.arctan2(-direction_vec[1], direction_vec[0])  - np.pi/2
                 gamma = np.pi/2   #disregard
-                freq = 10    #CHANGE THIS EACH FRAME
+                freq = 5    #CHANGE THIS EACH FRAME
                 psi = np.pi/2      #disregard
                 gradient = 0 # #disregard
                 acoustic_freq = 0  #disregard

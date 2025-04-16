@@ -1,8 +1,8 @@
 
 from typing import List, Tuple, Union
-class Robot:
+class Cell:
     """
-    Robot class to store and ID all new robots currently being tracked.
+    cell class to store and ID all new cells currently being tracked.
 
     Args:
         None

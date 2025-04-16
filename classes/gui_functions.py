@@ -32,10 +32,11 @@ from classes.tracker_class import VideoThread
 from classes.gui_widgets import Ui_MainWindow
 from classes.arduino_class import ArduinoHandler
 from classes.robot_class import Robot
+from classes.cell_class import Cell
 from classes.record_class import RecordThread
 from classes.algorithm_class import control_algorithm
 from classes.pathplanner import geo_algorithm
-from classes.APG_dynamic_old import run_dynamic_pathplanner
+from classes.APG_dynamic import run_dynamic_pathplanner
 
 
 
@@ -86,7 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         elif "Windows" in platform.platform():
             self.tbprint("Detected OS:  Windows")
-            PORT = "COM3"
+            PORT = "COM4"
         else:
             self.tbprint("undetected operating system")
             PORT = None
@@ -103,6 +104,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.currentframe = None
         self.frame_number = 0
         self.robots = []
+        self.cells = []
         self.videopath = 0
         self.cap = None
         self.tracker = None
@@ -130,6 +132,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.robotmaskdilationbox.valueChanged.connect(self.get_slider_vals)
         self.ui.robotmaskblurbox.valueChanged.connect(self.get_slider_vals)
         self.ui.robotcroplengthbox.valueChanged.connect(self.get_slider_vals)
+
+        self.ui.cellmasklowerbox.valueChanged.connect(self.get_slider_vals)
+        self.ui.cellmaskupperbox.valueChanged.connect(self.get_slider_vals)
+        self.ui.cellmaskdilationbox.valueChanged.connect(self.get_slider_vals)
+        self.ui.cellmaskblurbox.valueChanged.connect(self.get_slider_vals)
+        self.ui.cellcroplengthbox.valueChanged.connect(self.get_slider_vals)
         
 
 
@@ -220,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-    def update_image(self, frame, mask, robot_list):
+    def update_image(self, frame, cell_mask, cell_list, robot_mask, robot_list):
         """Updates the image_label with a new opencv image"""
 
         #static algoruthm 
@@ -235,14 +243,8 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.dynamic_algorithm_status == True:
             
             if len(robot_list) >0: #a bot is present
-                #remove the bot from the mask to avoid the algorithm mistaking the bot from an obstacle
-                try:
-                    for bot in self.tracker.robot_list:    
-                        x,y,w,h = robot_list[-1].cropped_frame[-1]
-                        blank = np.zeros((w, h), dtype=np.uint8) 
-                        mask[y:y+w , x:x+h] = blank 
-                except Exception:
-                    pass
+                #remove the bot from the cell mask to avoid the algorithm mistaking the bot from an obstacle
+         
                 
 
                 #define start and end points
@@ -254,7 +256,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 safety_radius = self.ui.safetyradiusbox.value()
 
                 #define dynamic path
-                frame, trajectory, self.total_length, self.obstacle_amount = run_dynamic_pathplanner(mask, frame, current_robot_position, end, alpha_geo, safety_radius)
+                frame, trajectory, self.total_length, self.obstacle_amount = run_dynamic_pathplanner(cell_mask, frame, current_robot_position, end, alpha_geo, safety_radius)
 
                 #output actuation actions
                 #if len(trajectory)==0:
@@ -393,32 +395,56 @@ class MainWindow(QtWidgets.QMainWindow):
         return newx, newy
 
     def eventFilter(self, object, event):
+        
         if object is self.ui.VideoFeedLabel: 
             if self.tracker is not None:
+                
+                    
                 if event.type() == QtCore.QEvent.MouseButtonPress:   
                     if event.buttons() == QtCore.Qt.LeftButton:
                         newx, newy = self.convert_coords(event.pos())
                         #generate original bounding box
                         
-                 
-                        x_1 = int(newx - self.ui.robotcroplengthbox.value()  / 2)
-                        y_1 = int(newy - self.ui.robotcroplengthbox.value()  / 2)
-                        w = self.ui.robotcroplengthbox.value()
-                        h = self.ui.robotcroplengthbox.value()
+                        #reset algorithm nodes
+                   
 
-                        robot = Robot()  # create robot instance
-                        robot.add_frame(self.frame_number)
-                        robot.add_time(0)
-                        robot.add_position([newx,newy])
-                        robot.add_velocity([0,0,0])
-                        robot.add_crop([x_1, y_1, w, h])
-                        robot.add_area(0)
-                        robot.add_blur(0)
-                        robot.add_stuck_status(0)
-                        robot.crop_length = self.ui.robotcroplengthbox.value()
-                        self.tracker.robot_list.append(robot) #this has to include tracker.robot_list because I need to add it to that class
+                        if self.ui.robotmask_radio.isChecked():
+                            x_1 = int(newx - self.ui.robotcroplengthbox.value()  / 2)
+                            y_1 = int(newy - self.ui.robotcroplengthbox.value()  / 2)
+                            w = self.ui.robotcroplengthbox.value()
+                            h = self.ui.robotcroplengthbox.value()
+
+                            robot = Robot()  # create robot instance
+                            robot.add_frame(self.frame_number)
+                            robot.add_time(0)
+                            robot.add_position([newx,newy])
+                            robot.add_velocity([0,0,0])
+                            robot.add_crop([x_1, y_1, w, h])
+                            robot.add_area(0)
+                            robot.add_blur(0)
                         
-        
+                            robot.crop_length = self.ui.robotcroplengthbox.value()
+                            self.tracker.robot_list.append(robot) #this has to include tracker.robot_list because I need to add it to that class
+                        
+                        elif self.ui.cellmask_radio.isChecked():
+                            x_1 = int(newx - self.ui.cellcroplengthbox.value()  / 2)
+                            y_1 = int(newy - self.ui.cellcroplengthbox.value()  / 2)
+                            w = self.ui.cellcroplengthbox.value()
+                            h = self.ui.cellcroplengthbox.value()
+
+                            cell = Cell()  # create robot instance
+                            cell.add_frame(self.frame_number)
+                            cell.add_time(0)
+                            cell.add_position([newx,newy])
+                            cell.add_velocity([0,0,0])
+                            cell.add_crop([x_1, y_1, w, h])
+                            cell.add_area(0)
+                            cell.add_blur(0)
+                           
+                            cell.crop_length = self.ui.cellcroplengthbox.value()
+                            
+                            self.tracker.cell_list.append(cell) #this has to include tracker.robot_list because I need to add it to that class
+
                
                     
                     
@@ -426,13 +452,17 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.drawing = True
                         newx, newy = self.convert_coords(event.pos())
                         if len(self.tracker.robot_list) > 0:
+                  
                             self.tracker.robot_list[-1].add_trajectory([newx, newy])
                 
                 
                     if event.buttons() == QtCore.Qt.MiddleButton: 
                         del self.tracker.robot_list[:]
+                        del self.tracker.cell_list[:]
+               
                         del self.robots[:]
-            
+                        del self.cells[:]
+                     
                        
                     
                             
@@ -460,7 +490,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
         return super().eventFilter(object, event)
-            
             
 
     
@@ -696,6 +725,13 @@ class MainWindow(QtWidgets.QMainWindow):
         robotmaskblur = self.ui.robotmaskblurbox.value()
         robotcrop_length = self.ui.robotcroplengthbox.value()
 
+        celllower = self.ui.cellmasklowerbox.value() 
+        cellupper = self.ui.cellmaskupperbox.value()
+        celldilation = self.ui.cellmaskdilationbox.value() 
+        cellmaskblur = self.ui.cellmaskblurbox.value()
+        cellcrop_length = self.ui.cellcroplengthbox.value()
+
+
 
         if self.tracker is not None: 
 
@@ -704,6 +740,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.tracker.robot_mask_dilation = robotdilation
             self.tracker.robot_mask_blur = robotmaskblur
             self.tracker.robot_crop_length = robotcrop_length
+
+            self.tracker.cell_mask_lower = celllower
+            self.tracker.cell_mask_upper = cellupper
+            self.tracker.cell_mask_dilation = celldilation
+            self.tracker.cell_mask_blur = cellmaskblur
+            self.tracker.cell_crop_length = cellcrop_length
 
 
 
