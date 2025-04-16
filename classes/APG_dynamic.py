@@ -20,9 +20,23 @@ excel_path = "/Users/yanda/Downloads/test_result.xlsx"
 records = []
 frame_index = 0
 
+# dynamic initialization
+tracking = []
+all_path = []
+colormap = plt.get_cmap('plasma')
+target_point = []
+initialized = False
+reinitialize = True
+target_idx = 0 
+override_active = False
+trajectory_memory = []
+
 def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     
     trajectory = []
+    global override_active
+    global initialized
+    global EP_ini
     
     SP_x, SP_y = start[0], start[1]
     EP_x, EP_y = end[0], end[1]
@@ -36,20 +50,9 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     #step = 10
 
     # dynamic para
-    grid_width = 500
+    grid_width = 50
     arrival_threshold = 500
     MR_size = 10
-
-    # dynamic initialization
-    tracking = []
-    all_path = []
-    colormap = plt.get_cmap('plasma')
-    target_point = []
-    initialized = False
-    reinitialize = True
-    target_idx = 0 
-    override_active = False
-    trajectory_memory = []
 
     #image_path = ‘’
     
@@ -74,7 +77,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
     all_bboxes = []
     sub_contours_color = []
 
-    '''# contour mesh 遍历每个识别到的轮廓
+    # contour mesh 遍历每个识别到的轮廓
     for cnt in contours_white:
         # 1. 获取当前轮廓的外接矩形
         x, y, w, h = cv2.boundingRect(cnt)
@@ -115,9 +118,9 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
 
         #cv2.circle(image, (int(center_x), image_height - int(center_y)), radius, (0, 255, 0), 3)
         
-        centers_radius_white.append(((center_x, center_y), radius, (x, y, w, h)))'''
+        centers_radius_white.append(((center_x, center_y), radius, (x, y, w, h)))
 
-    for contour in contours_white:
+    '''for contour in contours_white:
         x, y, w, h = cv2.boundingRect(contour)
         # 判断横向还是纵向长
         if w > h:
@@ -155,7 +158,7 @@ def run_dynamic_pathplanner(mask, frame, start, end, alpha, safety_radius):
             radius = int(safety_radius * math.hypot(w_new, h_new)) + MR_size
             
             centers_radius_white.append(((center_x, center_y), radius, (x_new, y_new, w_new, h_new)))
-            all_bboxes.append((x_new, y_new, w_new, h_new))
+            all_bboxes.append((x_new, y_new, w_new, h_new))'''
 
     # 初始参数设置
     SP_ini = (SP_x, SP_y)

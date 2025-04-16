@@ -263,6 +263,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 #    trajectory.append(end)
 
                 frame, Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq = self.algorithm.run_dynamic(frame, current_robot_position, trajectory, end)
+                freq = self.ui.frequency_box.value()
                 self.arduino.send(Bx, By, Bz, alpha, gamma, freq, psi, gradient, acoustic_freq)
 
                 
